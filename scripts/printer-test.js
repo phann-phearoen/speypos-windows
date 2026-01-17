@@ -3,6 +3,7 @@ const { ThermalPrinter, PrinterTypes } = require("node-thermal-printer");
 const printer = new ThermalPrinter({
   type: 'epson', // 👈 IMPORTANT
   interface: 'printer:XP-80C',
+  driver: 'usb',
   width: 80,
   options: {
     timeout: 5000,
