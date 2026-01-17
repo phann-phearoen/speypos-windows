@@ -1,5 +1,6 @@
-const ThermalPrinter = require('node-thermal-printer');
-const PrinterTypes = ThermalPrinter.types;
+// const ThermalPrinter = require('node-thermal-printer');
+// const PrinterTypes = ThermalPrinter.types;
+const { ThermalPrinter, PrinterTypes } = require('node-thermal-printer');
 
 const printer = new ThermalPrinter({
   type: PrinterTypes.EPSON,
