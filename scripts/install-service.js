@@ -54,7 +54,7 @@ async function deploy() {
       name: 'SpeyPOS Local Server',
       description: 'The primary backend service for the SpeyPOS application.',
       script: serviceScriptPath,
-      nodeOptions: ['--harmony', '--max-old-space-size=256'],
+      nodeOptions: ['--harmony', '--max-old-space-size=2048'],
       // Add the working directory
       cwd: backendDir,
       env: {
