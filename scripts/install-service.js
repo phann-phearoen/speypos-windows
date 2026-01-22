@@ -2,6 +2,7 @@ const { Service } = require('node-windows');
 const path = require('path');
 const { execSync } = require('child_process');
 const fs = require('fs-extra');
+const process = require('process');
 
 // --- Configuration ---
 // __dirname is the directory of the current script (i.e., /scripts)
@@ -16,6 +17,23 @@ const serviceScriptPath = path.join(backendDir, 'src', 'index.js');
 function log(message) {
   console.log(`[DEPLOY] ${message}`);
 }
+
+// Global error handlers to log crashes
+process.on('uncaughtException', err => {
+  require('fs').appendFileSync(
+    projectRoot + '\\speypos-crash.log',
+    err.stack + '\n'
+  );
+  process.exit(1);
+});
+
+process.on('unhandledRejection', err => {
+  require('fs').appendFileSync(
+    projectRoot + '\\speypos-crash.log',
+    String(err) + '\n'
+  );
+  process.exit(1);
+});
 
 function execute(command, cwd) {
   log(`Executing: ${command} in ${cwd}`);
