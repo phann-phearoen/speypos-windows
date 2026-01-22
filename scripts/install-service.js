@@ -30,63 +30,75 @@ function execute(command, cwd) {
 }
 
 // --- Deployment Steps ---
-try {
-  // 1. Install frontend dependencies
-  execute('npm install', frontendDir);
+async function deploy() {
+  try {
+    // 1. Install frontend dependencies
+    execute('npm install', frontendDir);
 
-  // 2. Build the frontend application
-  execute('npm run build', frontendDir);
+    // 2. Build the frontend application
+    execute('npm run build', frontendDir);
 
-  // 3. Copy frontend build to backend public directory
-  log(`Removing old public directory: ${backendPublicDir}`);
-  fs.removeSync(backendPublicDir);
-  log(`Copying ${frontendBuildDir} to ${backendPublicDir}`);
-  fs.copySync(frontendBuildDir, backendPublicDir);
-  log('Frontend assets copied successfully.');
+    // 3. Copy frontend build to backend public directory
+    log(`Removing old public directory: ${backendPublicDir}`);
+    fs.removeSync(backendPublicDir);
+    log(`Copying ${frontendBuildDir} to ${backendPublicDir}`);
+    fs.copySync(frontendBuildDir, backendPublicDir);
+    log('Frontend assets copied successfully.');
 
-  // 4. Install backend dependencies
-  execute('npm install', backendDir);
+    // 4. Install backend dependencies
+    execute('npm install', backendDir);
 
-  // 5. Configure and install the Windows Service
-  log('Configuring Windows service...');
-  const svc = new Service({
-    name: 'SpeyPOS Local Server',
-    description: 'The primary backend service for the SpeyPOS application.',
-    script: serviceScriptPath,
-    nodeOptions: ['--harmony', '--max-old-space-size=256'],
-    env: {
-      name: 'NODE_ENV',
-      value: 'production',
-    },
-  });
+    // 5. Configure and install the Windows Service
+    log('Configuring Windows service...');
+    const svc = new Service({
+      name: 'SpeyPOS Local Server',
+      description: 'The primary backend service for the SpeyPOS application.',
+      script: serviceScriptPath,
+      nodeOptions: ['--harmony', '--max-old-space-size=256'],
+      // Add the working directory
+      cwd: backendDir,
+      env: {
+        name: 'NODE_ENV',
+        value: 'production',
+      },
+    });
 
-  svc.on('install', () => {
-    log('Service installed successfully.');
-    svc.start();
-    log('Service started.');
-    log('Deployment complete!');
-  });
+    const installService = () => new Promise((resolve, reject) => {
+      svc.on('install', () => {
+        log('Service installed successfully.');
+        svc.start();
+        log('Service started.');
+        log('Deployment complete!');
+        resolve();
+      });
 
-  svc.on('alreadyinstalled', () => {
-    log('Service is already installed. Restarting service...');
-    svc.restart();
-  });
-  
-  svc.on('restart', () => {
-    log('Service restarted.');
-    log('Deployment complete!');
-  });
+      svc.on('alreadyinstalled', () => {
+        log('Service is already installed. Restarting service...');
+        svc.restart();
+      });
+      
+      svc.on('restart', () => {
+        log('Service restarted.');
+        log('Deployment complete!');
+        resolve();
+      });
 
-  svc.on('error', (err) => {
-    console.error('[DEPLOY] Service error:', err);
+      svc.on('error', (err) => {
+        console.error('[DEPLOY] Service error:', err);
+        reject(err);
+      });
+
+      log('Installing service...');
+      svc.install();
+    });
+
+    await installService();
+
+  } catch (error) {
+    console.error('[DEPLOY] A critical error occurred during deployment:');
+    console.error(error);
     process.exit(1);
-  });
-
-  log('Installing service...');
-  svc.install();
-
-} catch (error) {
-  console.error('[DEPLOY] A critical error occurred during deployment:');
-  console.error(error);
-  process.exit(1);
+  }
 }
+
+deploy();
