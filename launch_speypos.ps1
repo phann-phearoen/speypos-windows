@@ -53,7 +53,7 @@ $staffHwnd = [WindowManager]::GetForegroundWindow()
 [WindowManager]::MoveWindow($staffHwnd, $screen1X, 0, $width, $height, $true)
 
 # --- LAUNCH CUSTOMER ---
-$customerArgs = "--app=", $customerUrl, "--user-data-dir=$customerDataDir", "--disk-cache-size=1", "--media-cache-size=1", "--window-position=1366,0"
+$customerArgs = "--kiosk", $customerUrl, "--user-data-dir=$customerDataDir", "--disk-cache-size=1", "--media-cache-size=1", "--window-position=1366,0"
 Start-Process $chromePath -ArgumentList $customerArgs
 Start-Sleep -Seconds 3
 $customerHwnd = [WindowManager]::GetForegroundWindow()
