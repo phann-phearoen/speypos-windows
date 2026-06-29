@@ -49,12 +49,7 @@ async function deploy() {
     // 4. Install backend dependencies
     execute('npm install', backendDir);
 
-    // 5. Install Puppeteer browser
-    log('Installing Puppeteer browser...');
-    execute('npx puppeteer browsers install chrome --path data/puppeteer', backendDir);
-    log('Puppeteer browser installed successfully.');
-
-    // 6. Configure and install the Windows Service
+    // 5. Configure and install the Windows Service
     log('Configuring Windows service...');
     const svc = new Service({
       name: 'SpeyPOS Local Server',
