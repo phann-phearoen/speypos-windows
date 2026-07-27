@@ -1,0 +1,113 @@
+{
+  "communities": {
+    "0": [
+      "speypos_local_src_services_maintenance_service",
+      "speypos_local_src_services_maintenance_service_optimizedatabase",
+      "speypos_local_src_services_maintenance_service_performfinalsyncattempt",
+      "speypos_local_src_services_maintenance_service_purgeolddata",
+      "speypos_local_src_services_maintenance_service_purgeoldlogs",
+      "speypos_local_src_services_maintenance_service_runmaintenance",
+      "speypos_local_src_system_lifecycle",
+      "speypos_local_src_system_lifecycle_initialize",
+      "speypos_local_src_system_lifecycle_shutdown",
+      "speypos_local_src_utils_logger_logger"
+    ],
+    "1": [
+      "speypos_local_src_config_env",
+      "speypos_local_src_config_env_dirname",
+      "speypos_local_src_config_env_env",
+      "speypos_local_src_config_env_parseintegerenv",
+      "speypos_local_src_config_env_syncminibatchsize",
+      "speypos_local_src_config_env_validateenv"
+    ],
+    "2": [
+      "speypos_local_src_config_paths",
+      "speypos_local_src_config_paths_dbdir",
+      "speypos_local_src_config_paths_dbpath",
+      "speypos_local_src_config_paths_dirname",
+      "speypos_local_src_config_paths_filename",
+      "speypos_local_src_config_paths_projectroot"
+    ],
+    "3": [
+      "speypos_local_src_config_paths_paths",
+      "speypos_local_src_utils_logger",
+      "speypos_local_src_utils_logger_devformat",
+      "speypos_local_src_utils_logger_prodformat"
+    ]
+  },
+  "cohesion": {
+    "0": 0.35555555555555557,
+    "1": 0.3333333333333333,
+    "2": 0.3333333333333333,
+    "3": 0.5
+  },
+  "gods": [
+    {
+      "id": "speypos_local_src_services_maintenance_service_runmaintenance",
+      "label": "runMaintenance()",
+      "degree": 7
+    },
+    {
+      "id": "speypos_local_src_config_env_env",
+      "label": "env",
+      "degree": 3
+    },
+    {
+      "id": "speypos_local_src_config_paths_paths",
+      "label": "paths",
+      "degree": 3
+    },
+    {
+      "id": "speypos_local_src_utils_logger_logger",
+      "label": "logger",
+      "degree": 3
+    },
+    {
+      "id": "speypos_local_src_services_maintenance_service_performfinalsyncattempt",
+      "label": "performFinalSyncAttempt()",
+      "degree": 2
+    },
+    {
+      "id": "speypos_local_src_services_maintenance_service_purgeolddata",
+      "label": "purgeOldData()",
+      "degree": 2
+    },
+    {
+      "id": "speypos_local_src_services_maintenance_service_purgeoldlogs",
+      "label": "purgeOldLogs()",
+      "degree": 2
+    },
+    {
+      "id": "speypos_local_src_services_maintenance_service_optimizedatabase",
+      "label": "optimizeDatabase()",
+      "degree": 2
+    },
+    {
+      "id": "speypos_local_src_system_lifecycle_initialize",
+      "label": "initialize()",
+      "degree": 2
+    },
+    {
+      "id": "speypos_local_src_config_env_dirname",
+      "label": "__dirname",
+      "degree": 1
+    }
+  ],
+  "surprises": [
+    {
+      "source": "initialize()",
+      "target": "runMaintenance()",
+      "source_files": [
+        "speypos-local/src/system/lifecycle.js",
+        "speypos-local/src/services/maintenance.service.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `initialize()` unexpectedly reaches hub `runMaintenance()`"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "communities": {
+    "0": [
+      "sync_queue_readqueue",
+      "sync_queue_writequeue",
+      "sync_syncmanager",
+      "sync_syncmanager_enqueueflushforshift",
+      "sync_syncmanager_enqueueordersforshift",
+      "sync_syncmanager_enqueueshiftjob",
+      "sync_syncmanager_handleflushjob",
+      "sync_syncmanager_handleminibatchjob",
+      "sync_syncmanager_job_types",
+      "sync_syncmanager_maybeenqueueminibatchforactiveshift",
+      "sync_syncmanager_processjob",
+      "sync_syncmanager_processsyncqueue"
+    ],
+    "1": [
+      "services_maintenance_service",
+      "services_maintenance_service_optimizedatabase",
+      "services_maintenance_service_performfinalsyncattempt",
+      "services_maintenance_service_purgeolddata",
+      "services_maintenance_service_purgeoldlogs",
+      "services_maintenance_service_runmaintenance",
+      "system_lifecycle",
+      "system_lifecycle_initialize",
+      "system_lifecycle_shutdown"
+    ],
+    "2": [
+      "services_outbox_service",
+      "services_outbox_service_buildorderevents",
+      "services_outbox_service_buildshiftcloseevents",
+      "services_outbox_service_buildvoidevents",
+      "services_outbox_service_queueordersideeffects",
+      "services_outbox_service_queueshiftclosesideeffects",
+      "services_outbox_service_queuevoidsideeffects"
+    ],
+    "3": [
+      "config_env",
+      "config_env_dirname",
+      "config_env_env",
+      "config_env_parseintegerenv",
+      "config_env_syncminibatchsize",
+      "config_env_validateenv"
+    ],
+    "4": [
+      "config_paths",
+      "config_paths_dbdir",
+      "config_paths_dbpath",
+      "config_paths_dirname",
+      "config_paths_filename",
+      "config_paths_projectroot"
+    ],
+    "5": [
+      "config_paths_paths",
+      "sync_queue",
+      "utils_logger",
+      "utils_logger_devformat",
+      "utils_logger_logger",
+      "utils_logger_prodformat"
+    ],
+    "6": [
+      "services_recovery_service",
+      "services_recovery_service_getunprintedorders",
+      "services_recovery_service_getunreportedorders",
+      "services_recovery_service_getunreportedshifts",
+      "services_recovery_service_retryunprintedorders",
+      "services_recovery_service_retryunreportedtelegrams"
+    ],
+    "7": [
+      "utils_error_details",
+      "utils_error_details_geterrordetails",
+      "utils_error_details_safestringify"
+    ]
+  },
+  "cohesion": {
+    "0": 0.3333333333333333,
+    "1": 0.3888888888888889,
+    "2": 0.42857142857142855,
+    "3": 0.3333333333333333,
+    "4": 0.3333333333333333,
+    "5": 0.4666666666666667,
+    "6": 0.5333333333333333,
+    "7": 1.0
+  },
+  "gods": [
+    {
+      "id": "services_maintenance_service_runmaintenance",
+      "label": "runMaintenance()",
+      "degree": 7
+    },
+    {
+      "id": "sync_syncmanager_processsyncqueue",
+      "label": "processSyncQueue()",
+      "degree": 7
+    },
+    {
+      "id": "sync_syncmanager_enqueueshiftjob",
+      "label": "enqueueShiftJob()",
+      "degree": 6
+    },
+    {
+      "id": "utils_logger_logger",
+      "label": "logger",
+      "degree": 6
+    },
+    {
+      "id": "config_env_env",
+      "label": "env",
+      "degree": 4
+    },
+    {
+      "id": "config_paths_paths",
+      "label": "paths",
+      "degree": 4
+    },
+    {
+      "id": "sync_queue_readqueue",
+      "label": "readQueue()",
+      "degree": 4
+    },
+    {
+      "id": "sync_queue_writequeue",
+      "label": "writeQueue()",
+      "degree": 4
+    },
+    {
+      "id": "sync_syncmanager_processjob",
+      "label": "processJob()",
+      "degree": 4
+    },
+    {
+      "id": "services_recovery_service_retryunreportedtelegrams",
+      "label": "retryUnreportedTelegrams()",
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "initialize()",
+      "target": "processSyncQueue()",
+      "source_files": [
+        "system/lifecycle.js",
+        "sync/syncManager.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "initialize()",
+      "target": "runMaintenance()",
+      "source_files": [
+        "system/lifecycle.js",
+        "services/maintenance.service.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "enqueueShiftJob()",
+      "target": "readQueue()",
+      "source_files": [
+        "sync/syncManager.js",
+        "sync/queue.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "cross-file semantic connection"
+    },
+    {
+      "source": "processSyncQueue()",
+      "target": "readQueue()",
+      "source_files": [
+        "sync/syncManager.js",
+        "sync/queue.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "cross-file semantic connection"
+    },
+    {
+      "source": "enqueueShiftJob()",
+      "target": "writeQueue()",
+      "source_files": [
+        "sync/syncManager.js",
+        "sync/queue.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "cross-file semantic connection"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
