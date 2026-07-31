@@ -19,6 +19,7 @@ const mockTranslation = vi.fn();
 
 const mockGetStaff = vi.fn();
 const mockGetPreviousDayStatus = vi.fn();
+const mockGetOpenShifts = vi.fn();
 const mockOpenShiftApi = vi.fn();
 const mockGetCloseDayStatus = vi.fn();
 const mockDayClosePreviewModal = vi.fn();
@@ -50,6 +51,7 @@ vi.mock('@/lib/api', () => ({
   },
   shiftApi: {
     getPreviousDayStatus: (...args: any[]) => mockGetPreviousDayStatus(...args),
+    getOpenShifts: (...args: any[]) => mockGetOpenShifts(...args),
     getCloseDayStatus: (...args: any[]) => mockGetCloseDayStatus(...args),
     openShift: (...args: any[]) => mockOpenShiftApi(...args),
   },
@@ -130,6 +132,10 @@ vi.mock('@/components/pos/StaleShiftsModal', () => ({
   StaleShiftsModal: () => null,
 }));
 
+vi.mock('@/components/pos/ShiftClosePreviewModal', () => ({
+  ShiftClosePreviewModal: () => null,
+}));
+
 function setupBaseMocks() {
   mockUseShift.mockReturnValue({
     openShift: vi.fn(),
@@ -181,6 +187,11 @@ function setupBaseMocks() {
       isCloseable: true,
       reason: null,
     },
+    error: null,
+  });
+
+  mockGetOpenShifts.mockResolvedValue({
+    data: [],
     error: null,
   });
 
@@ -390,4 +401,30 @@ test('F10: keeps Close Day disabled when day has not started yet (0 open shifts,
 
   const closeDayButton = await screen.findByRole('button', { name: /close day/i });
   expect(closeDayButton).toBeDisabled();
+});
+
+test('F11: keeps Close Day disabled while stale shifts remain for blocked previous day', async () => {
+  mockGetPreviousDayStatus.mockResolvedValue({
+    data: { hasPreviousDay: true, previousDate: '2026-07-27', isClosed: false, todayClosedShiftsCount: 0 },
+    error: null,
+  });
+  mockGetOpenShifts.mockResolvedValue({
+    data: [
+      {
+        id: 'shift-stale-1',
+        staff_id: 'staff-1',
+        date: '2026-07-27',
+        started_at: Date.now(),
+        status: 'open',
+      },
+    ],
+    error: null,
+  });
+
+  renderShiftPageWithState();
+
+  const closeDayButtons = await screen.findAllByRole('button', { name: /close day/i });
+  await waitFor(() => {
+    expect(closeDayButtons.every((button) => button.hasAttribute('disabled'))).toBe(true);
+  });
 });

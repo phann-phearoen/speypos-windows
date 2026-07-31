@@ -285,12 +285,7 @@ export function openShift(req, res) {
       businessDay = resolved.businessDay;
     }
 
-    const enforcementStartDate = shiftRepo.getDayCloseEnforcementStartDate();
-
-    // Block only for business days on/after the enforcement start date.
     const previousDate = getLastBusinessDateBefore(todayStoreDate);
-    const shouldEnforcePreviousDayClose =
-      !!previousDate && !!enforcementStartDate && previousDate >= enforcementStartDate;
 
     if (isBusinessDayEnabled()) {
       try {
@@ -308,7 +303,7 @@ export function openShift(req, res) {
         }
         throw error;
       }
-    } else if (shouldEnforcePreviousDayClose) {
+    } else if (previousDate) {
       const dayClose = getDayClose(previousDate);
       if (!dayClose) {
         logger.warn(
@@ -526,29 +521,26 @@ export function getPreviousDayStatus(req, res) {
     }
 
     const previousDate = getLastBusinessDateBefore(todayStoreDate);
-    const enforcementStartDate = shiftRepo.getDayCloseEnforcementStartDate();
 
     if (!previousDate) {
       return res.status(200).json({
         hasPreviousDay: false,
         todayClosedShiftsCount,
-        enforcementStartDate,
+        enforcementStartDate: null,
+        isEnforced: true,
       });
     }
 
-    const isEnforced =
-      !!enforcementStartDate && previousDate >= enforcementStartDate;
-    const dayClose = isEnforced ? getDayClose(previousDate) : null;
+    const dayClose = getDayClose(previousDate);
 
     return res.status(200).json({
       hasPreviousDay: true,
       previousDate,
-      // For pre-cutover dates we treat the day as effectively closed (ignored).
-      isClosed: isEnforced ? !!dayClose : true,
+      isClosed: !!dayClose,
       closedAt: dayClose?.closed_at ?? null,
       todayClosedShiftsCount,
-      enforcementStartDate,
-      isEnforced,
+      enforcementStartDate: null,
+      isEnforced: true,
     });
   } catch (error) {
     logger.error('Failed to get previous day status', { error: error.message });

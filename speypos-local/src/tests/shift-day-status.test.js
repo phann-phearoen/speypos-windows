@@ -8,6 +8,7 @@ let getDb;
 let openShift;
 let getPreviousDayStatus;
 let getNowInStoreTime;
+let originalBusinessDayEnabled;
 
 const staffId = 'test-staff-1';
 
@@ -53,6 +54,9 @@ function setMigrationAppliedAt(db, isoDateTime) {
 }
 
 before(async () => {
+  originalBusinessDayEnabled = process.env.BUSINESS_DAY_ENABLED;
+  process.env.BUSINESS_DAY_ENABLED = 'false';
+
   process.env.PORT = process.env.PORT || '8080';
   process.env.PRINTER_NAME = process.env.PRINTER_NAME || 'TEST_PRINTER';
   process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'TEST_TOKEN';
@@ -67,6 +71,11 @@ before(async () => {
 
 after(() => {
   closeDatabase();
+  if (originalBusinessDayEnabled === undefined) {
+    delete process.env.BUSINESS_DAY_ENABLED;
+  } else {
+    process.env.BUSINESS_DAY_ENABLED = originalBusinessDayEnabled;
+  }
 });
 
 beforeEach(() => {
@@ -96,14 +105,14 @@ test('B1: getPreviousDayStatus returns todayClosedShiftsCount when 2 shifts are 
   assert.equal(res.body.todayClosedShiftsCount, 2);
 });
 
-test('B2: pre-cutover previous day is ignored (not enforced)', () => {
+test('B2: day-0 enforcement blocks previous day without DayClose', () => {
   const db = getDb();
   const { todayStoreDate } = getNowInStoreTime();
   const previousDate = addDays(todayStoreDate, -1);
 
   insertShift(db, { date: previousDate, status: 'closed' });
 
-  // Force enforcement start far in the future so previousDate is ignored.
+  // Move migration timestamp for legacy metadata; day-0 enforcement should still apply.
   const futureAppliedAt = `${addDays(todayStoreDate, 5)}T00:00:00.000Z`;
   setMigrationAppliedAt(db, futureAppliedAt);
 
@@ -112,15 +121,16 @@ test('B2: pre-cutover previous day is ignored (not enforced)', () => {
 
   assert.equal(statusRes.statusCode, 200);
   assert.equal(statusRes.body.previousDate, previousDate);
-  assert.equal(statusRes.body.isEnforced, false);
-  assert.equal(statusRes.body.isClosed, true);
+  assert.equal(statusRes.body.isEnforced, true);
+  assert.equal(statusRes.body.isClosed, false);
 
   const openReq = { body: { staff_id: staffId } };
   const openRes = makeRes();
   openShift(openReq, openRes);
 
-  assert.equal(openRes.statusCode, 201);
-  assert.equal(openRes.body.staff_id, staffId);
+  assert.equal(openRes.statusCode, 409);
+  assert.equal(openRes.body.error, 'PREVIOUS_DAY_NOT_CLOSED');
+  assert.equal(openRes.body.previousDate, previousDate);
 });
 
 test('B3: enforced previous day without DayClose blocks opening shift', () => {

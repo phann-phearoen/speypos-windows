@@ -17,6 +17,12 @@ interface DetectActiveShiftResult {
   orphaned: Shift[];
 }
 
+export interface ShiftLifecycleRedirectOptions {
+  lifecycleFlow?: 'stale-lifecycle';
+  lifecycleSource?: 'payment' | 'shift-context' | 'unknown';
+  staleDate?: string | null;
+}
+
 interface ShiftContextType {
   currentShift: Shift | null;
   currentStaff: Staff | null;
@@ -28,7 +34,7 @@ interface ShiftContextType {
   validateShift: () => Promise<boolean>;
   detectActiveShift: () => Promise<DetectActiveShiftResult | null>;
   clearOrphanedShifts: () => void;
-  invalidateCurrentShift: (message?: string) => void;
+  invalidateCurrentShift: (message?: string, options?: ShiftLifecycleRedirectOptions) => void;
 }
 
 const ShiftContext = createContext<ShiftContextType | null>(null);
@@ -68,7 +74,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   // Track if we've already fetched for this shiftId to avoid duplicate fetches
   const fetchedShiftIdRef = useRef<string | null>(null);
 
-  const invalidateCurrentShift = useCallback((message?: string) => {
+  const invalidateCurrentShift = useCallback((message?: string, options?: ShiftLifecycleRedirectOptions) => {
     setCurrentShift(null);
     setCurrentStaff(null);
     setOrphanedShifts([]);
@@ -80,7 +86,15 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     if (location.pathname !== '/pos/shift') {
       navigate('/pos/shift', {
         replace: true,
-        state: message ? { lifecycleError: message, invalidatedAt: Date.now() } : undefined,
+        state: message
+          ? {
+              lifecycleError: message,
+              invalidatedAt: Date.now(),
+              lifecycleFlow: options?.lifecycleFlow,
+              lifecycleSource: options?.lifecycleSource,
+              staleDate: options?.staleDate ?? null,
+            }
+          : undefined,
       });
     }
   }, [location.pathname, navigate]);

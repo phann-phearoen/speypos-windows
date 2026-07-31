@@ -406,8 +406,7 @@ export function getClosedShiftsCountForDate(date) {
 
 /**
  * Returns the store-date from which previous-day close enforcement should start.
- * We use the first day-close migration applied time plus one day as a grace period,
- * so historical days and the immediate post-release day are ignored.
+ * Day-0 enforcement uses the migration day itself as the start.
  * @returns {string|null}
  */
 export function getDayCloseEnforcementStartDate() {
@@ -427,6 +426,5 @@ export function getDayCloseEnforcementStartDate() {
   }
 
   const appliedAtUtc = new Date(row.applied_at);
-  const enforcementStartUtc = new Date(appliedAtUtc.getTime() + 24 * 60 * 60 * 1000);
-  return getStoreDateFromUtcDate(enforcementStartUtc);
+  return getStoreDateFromUtcDate(appliedAtUtc);
 }

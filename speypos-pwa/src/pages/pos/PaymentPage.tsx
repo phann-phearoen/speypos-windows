@@ -162,11 +162,9 @@ export default function PaymentPage() {
 
     if (hasLifecycleSignal) {
       const message = result.error || 'The current shift is no longer available.';
-      invalidateCurrentShift(message);
-      // Fallback redirect in case context invalidation can't navigate from this route.
-      navigate('/pos/shift', {
-        replace: true,
-        state: { lifecycleError: message, invalidatedAt: Date.now() },
+      invalidateCurrentShift(message, {
+        lifecycleFlow: 'stale-lifecycle',
+        lifecycleSource: 'payment',
       });
       toast({
         title: t('toast.error'),

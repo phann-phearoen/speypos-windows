@@ -19,7 +19,10 @@ interface StaleShiftsModalProps {
   open: boolean;
   onClose: () => void;
   previousDate?: string;
-  onUpdated?: () => void;
+  onUpdated?: (payload?: { staleRemainingCount: number; staleResolved: boolean }) => void;
+  onRequestCloseShift?: (shift: Shift) => void;
+  enforcePreviewClose?: boolean;
+  refreshKey?: number;
 }
 
 function isEmptyOpenShiftsResponse(errorCode: string | null, errorMessage: string | null): boolean {
@@ -30,7 +33,19 @@ function isEmptyOpenShiftsResponse(errorCode: string | null, errorMessage: strin
   return (errorMessage || '').toLowerCase().includes('no open shifts found');
 }
 
-export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: StaleShiftsModalProps) {
+function getStaleShifts(shifts: Shift[], boundaryDate: string): Shift[] {
+  return shifts.filter((shift) => shift.status === 'open' && shift.date <= boundaryDate);
+}
+
+export function StaleShiftsModal({
+  open,
+  onClose,
+  previousDate,
+  onUpdated,
+  onRequestCloseShift,
+  enforcePreviewClose,
+  refreshKey,
+}: StaleShiftsModalProps) {
   const { t } = useTranslation();
   const { getTodayDateString, formatTime } = useDateTime();
   const [loading, setLoading] = useState(false);
@@ -41,23 +56,29 @@ export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: Sta
 
   const staleShifts = useMemo(() => {
     const boundaryDate = previousDate || getTodayDateString();
-    return openShifts.filter((shift) => shift.status === 'open' && shift.date <= boundaryDate);
+    return getStaleShifts(openShifts, boundaryDate);
   }, [getTodayDateString, openShifts, previousDate]);
 
   const loadOpenShifts = async () => {
     setLoading(true);
     setError(null);
 
+    const boundaryDate = previousDate || getTodayDateString();
+
     const result = await shiftApi.getOpenShifts();
 
     if (result.error) {
       if (isEmptyOpenShiftsResponse(result.errorCode, result.error)) {
         setOpenShifts([]);
+        onUpdated?.({ staleRemainingCount: 0, staleResolved: true });
       } else {
         setError(result.error);
       }
     } else {
-      setOpenShifts(result.data || []);
+      const shifts = result.data || [];
+      setOpenShifts(shifts);
+      const stale = getStaleShifts(shifts, boundaryDate);
+      onUpdated?.({ staleRemainingCount: stale.length, staleResolved: stale.length === 0 });
     }
 
     setLoading(false);
@@ -68,6 +89,12 @@ export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: Sta
       loadOpenShifts();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      loadOpenShifts();
+    }
+  }, [open, refreshKey]);
 
   const closeShiftAndRefresh = async (shiftId: string): Promise<boolean> => {
     const result = await shiftApi.closeShift(shiftId);
@@ -85,13 +112,11 @@ export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: Sta
       normalizedMessage.includes('PREVIOUS BUSINESS DAY');
 
     if (result.data) {
-      onUpdated?.();
       await loadOpenShifts();
       return true;
     }
 
     if (isNoLongerOpenLifecycle) {
-      onUpdated?.();
       await loadOpenShifts();
       return true;
     }
@@ -105,6 +130,14 @@ export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: Sta
   };
 
   const handleCloseShift = async (shiftId: string) => {
+    if (enforcePreviewClose) {
+      const targetShift = staleShifts.find((shift) => shift.id === shiftId);
+      if (targetShift) {
+        onRequestCloseShift?.(targetShift);
+      }
+      return;
+    }
+
     setClosingShiftId(shiftId);
     const closed = await closeShiftAndRefresh(shiftId);
 
@@ -227,7 +260,7 @@ export function StaleShiftsModal({ open, onClose, previousDate, onUpdated }: Sta
           <Button
             variant="destructive"
             onClick={handleCloseAllStale}
-            disabled={loading || closingAll || staleShifts.length === 0}
+            disabled={loading || closingAll || staleShifts.length === 0 || !!enforcePreviewClose}
           >
             {closingAll ? (
               <>

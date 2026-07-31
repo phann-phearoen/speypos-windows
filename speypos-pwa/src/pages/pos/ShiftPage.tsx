@@ -11,8 +11,17 @@ import { StoreBrand } from '@/components/StoreBrand';
 import { DayClosePreviewModal } from '@/components/pos/DayClosePreviewModal';
 import { DayCloseResultModal } from '@/components/pos/DayCloseResultModal';
 import { StaleShiftsModal } from '@/components/pos/StaleShiftsModal';
+import { ShiftClosePreviewModal } from '@/components/pos/ShiftClosePreviewModal';
 import { Button } from '@/components/ui/button';
 import type { BusinessDayStatus, DayCloseCompletion, Staff, Shift, PreviousDayStatus } from '@/types/pos';
+
+interface ShiftLifecycleRouteState {
+  lifecycleError?: string;
+  invalidatedAt?: number;
+  lifecycleFlow?: 'stale-lifecycle';
+  lifecycleSource?: 'payment' | 'shift-context' | 'unknown';
+  staleDate?: string | null;
+}
 
 function isPreviousDayBlocked(status: PreviousDayStatus | null): boolean {
   if (!status?.hasPreviousDay) {
@@ -60,8 +69,27 @@ export default function ShiftPage() {
   const [showDayCloseResultModal, setShowDayCloseResultModal] = useState(false);
   const [dayCloseCompletion, setDayCloseCompletion] = useState<DayCloseCompletion | null>(null);
   const [showStaleShiftsModal, setShowStaleShiftsModal] = useState(false);
-  const lifecycleError =
-    (location.state as { lifecycleError?: string; invalidatedAt?: number } | null)?.lifecycleError || null;
+  const lifecycleState = (location.state as ShiftLifecycleRouteState | null) || null;
+  const lifecycleError = lifecycleState?.lifecycleError || null;
+  const lifecycleFlow = lifecycleState?.lifecycleFlow || null;
+  const lifecycleStaleDate = lifecycleState?.staleDate || null;
+  const [staleRemainingCount, setStaleRemainingCount] = useState<number | null>(null);
+  const [staleModalRefreshKey, setStaleModalRefreshKey] = useState(0);
+  const [previewingStaleShift, setPreviewingStaleShift] = useState<Shift | null>(null);
+
+  const isStaleLifecycleMessage = (message: string | null): boolean => {
+    if (!message) {
+      return false;
+    }
+
+    const normalized = message.toUpperCase();
+    return (
+      normalized.includes('SHIFT_NOT_CURRENT_BUSINESS_DAY') ||
+      normalized.includes('PREVIOUS_DAY_NOT_CLOSED') ||
+      normalized.includes('PREVIOUS BUSINESS DAY') ||
+      normalized.includes('CURRENT STORE BUSINESS DAY')
+    );
+  };
 
   const openDayCloseModal = (date?: string) => {
     setDayCloseTargetDate(date ?? null);
@@ -78,17 +106,36 @@ export default function ShiftPage() {
     }
   };
 
+  const refreshStaleRemainingCount = async (targetDate?: string) => {
+    const boundaryDate = targetDate || previousDayStatus?.previousDate;
+    if (!boundaryDate) {
+      setStaleRemainingCount(0);
+      return;
+    }
+
+    const result = await shiftApi.getOpenShifts();
+    if (result.error || !result.data) {
+      return;
+    }
+
+    const staleCount = result.data.filter((shift) => shift.status === 'open' && shift.date <= boundaryDate).length;
+    setStaleRemainingCount(staleCount);
+  };
+
   const refreshPreviousDayStatus = async () => {
     const result = await shiftApi.getPreviousDayStatus();
+    console.log('Previous Day Status:', result);
     if (!result.error && result.data) {
       setPreviousDayStatus(result.data);
 
       if (isPreviousDayBlocked(result.data) && result.data.previousDate) {
         await refreshDefaultCloseDayBusinessStatus(result.data.previousDate);
+        await refreshStaleRemainingCount(result.data.previousDate);
         return;
       }
 
       await refreshDefaultCloseDayBusinessStatus();
+      setStaleRemainingCount(0);
     }
   };
 
@@ -211,14 +258,63 @@ export default function ShiftPage() {
 
   const handleDayCloseResultClose = () => {
     setShowDayCloseResultModal(false);
+    setPreviewingStaleShift(null);
   };
 
-  const handleStaleShiftsUpdated = () => {
+  const handleStaleShiftsUpdated = (payload?: { staleRemainingCount: number; staleResolved: boolean }) => {
+    if (typeof payload?.staleRemainingCount === 'number') {
+      setStaleRemainingCount(payload.staleRemainingCount);
+    }
+
+    const shouldAdvanceToDayClose =
+      showStaleShiftsModal &&
+      !!payload?.staleResolved &&
+      previousDayBlocked;
+
     refreshPreviousDayStatus();
+
+    if (shouldAdvanceToDayClose) {
+      setShowStaleShiftsModal(false);
+      openDayCloseModal(previousDayStatus?.previousDate ?? lifecycleStaleDate ?? undefined);
+    }
+  };
+
+  const handleRequestCloseStaleShift = (shift: Shift) => {
+    setPreviewingStaleShift(shift);
+  };
+
+  const handleConfirmCloseStaleShift = async () => {
+    if (!previewingStaleShift) {
+      return;
+    }
+
+    const result = await shiftApi.closeShift(previewingStaleShift.id);
+    const normalizedCode = (result.errorCode || '').toUpperCase();
+    const normalizedMessage = (result.error || '').toUpperCase();
+    const isNoLongerOpenLifecycle =
+      normalizedCode === 'SHIFT_NOT_FOUND' ||
+      normalizedCode === 'SHIFT_NOT_OPEN' ||
+      normalizedCode === 'SHIFT_NOT_CURRENT_BUSINESS_DAY' ||
+      normalizedCode === 'PREVIOUS_DAY_NOT_CLOSED' ||
+      normalizedMessage.includes('SHIFT_NOT_FOUND') ||
+      normalizedMessage.includes('SHIFT_NOT_OPEN') ||
+      normalizedMessage.includes('SHIFT_NOT_CURRENT_BUSINESS_DAY') ||
+      normalizedMessage.includes('PREVIOUS_DAY_NOT_CLOSED') ||
+      normalizedMessage.includes('PREVIOUS BUSINESS DAY');
+
+    if (!result.data && !isNoLongerOpenLifecycle) {
+      setError(result.error || t('shift.staleCloseFailed'));
+      return;
+    }
+
+    setPreviewingStaleShift(null);
+    setStaleModalRefreshKey((prev) => prev + 1);
+    await refreshPreviousDayStatus();
   };
 
   const activeStaff = staffList.filter((s) => s.status === 'active');
   const previousDayBlocked = isPreviousDayBlocked(previousDayStatus);
+  const staleWorkflowActive = previousDayBlocked || lifecycleFlow === 'stale-lifecycle' || isStaleLifecycleMessage(lifecycleError);
   const closedShiftCount = previousDayStatus?.todayClosedShiftsCount ?? 0;
   const closeDayAttention = closedShiftCount >= 2;
   const closeDayAnimate = closeDayAttention && animateCloseDay;
@@ -226,7 +322,10 @@ export default function ShiftPage() {
   const closeDayDayNotStarted =
     defaultCloseDayTotalShifts === 0 && defaultCloseDayOpenShiftsCount === 0;
   const closeDayButtonDisabled =
-    dayCloseCompleted || defaultCloseDayBusinessStatus === 'CLOSED' || closeDayDayNotStarted;
+    dayCloseCompleted ||
+    defaultCloseDayBusinessStatus === 'CLOSED' ||
+    closeDayDayNotStarted ||
+    (staleWorkflowActive && previousDayBlocked && (staleRemainingCount ?? 0) > 0);
   const closeDayTargetDate = previousDayBlocked
     ? previousDayStatus?.previousDate ?? defaultCloseDayBusinessDate
     : defaultCloseDayBusinessDate;
@@ -325,13 +424,16 @@ export default function ShiftPage() {
                       onClick={() => setShowStaleShiftsModal(true)}
                     >
                       <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
-                      {t('shift.closeStaleShifts')}
+                      {staleRemainingCount && staleRemainingCount > 0
+                        ? `${t('shift.closeStaleShifts')} (${staleRemainingCount})`
+                        : t('shift.closeStaleShifts')}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       className="border-destructive/40 text-destructive hover:bg-destructive/10"
                       onClick={() => openDayCloseModal(previousDayStatus.previousDate)}
+                      disabled={closeDayButtonDisabled}
                     >
                       <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
                       {closeDayLabel}
@@ -427,7 +529,7 @@ export default function ShiftPage() {
               )}
 
               {/* Error Message */}
-              {error && !isBackendUnavailable && (
+              {error && !isBackendUnavailable && !staleWorkflowActive && (
                 <div>
                   <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -444,37 +546,35 @@ export default function ShiftPage() {
               {/* Shift action area */}
               {isShiftActionsReady && (
                 <>
-                  {!error && (
-                    <button
-                      onClick={handleOpenShift}
-                      disabled={!selectedStaff || openingShift || previousDayBlocked}
-                      className={`
-                        w-full pos-btn gap-3 py-4 rounded-xl font-semibold text-lg
-                        ${
-                          !selectedStaff || openingShift || previousDayBlocked
-                            ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                            : 'bg-success text-success-foreground shadow-md'
-                        }
-                      `}
-                    >
-                      {openingShift ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          {t('shift.openingShift')}
-                        </>
-                      ) : previousDayBlocked ? (
-                        <>
-                          <Lock className="w-5 h-5" />
-                          {t('shift.openShift')}
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-5 h-5" />
-                          {t('shift.openShift')}
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={handleOpenShift}
+                    disabled={!selectedStaff || openingShift || previousDayBlocked}
+                    className={`
+                      w-full pos-btn gap-3 py-4 rounded-xl font-semibold text-lg
+                      ${
+                        !selectedStaff || openingShift || previousDayBlocked
+                          ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                          : 'bg-success text-success-foreground shadow-md'
+                      }
+                    `}
+                  >
+                    {openingShift ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {t('shift.openingShift')}
+                      </>
+                    ) : previousDayBlocked ? (
+                      <>
+                        <Lock className="w-5 h-5" />
+                        {t('shift.openShift')}
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5" />
+                        {t('shift.openShift')}
+                      </>
+                    )}
+                  </button>
 
                   {/* Close Day Button */}
                   <div className="mt-6 pt-6 border-t border-border">
@@ -531,8 +631,19 @@ export default function ShiftPage() {
           <StaleShiftsModal
             open={showStaleShiftsModal}
             onClose={() => setShowStaleShiftsModal(false)}
-            previousDate={previousDayStatus?.previousDate}
+            previousDate={previousDayStatus?.previousDate ?? lifecycleStaleDate ?? undefined}
             onUpdated={handleStaleShiftsUpdated}
+            onRequestCloseShift={handleRequestCloseStaleShift}
+            enforcePreviewClose
+            refreshKey={staleModalRefreshKey}
+          />
+
+          <ShiftClosePreviewModal
+            open={!!previewingStaleShift}
+            onClose={() => setPreviewingStaleShift(null)}
+            onConfirm={handleConfirmCloseStaleShift}
+            shiftId={previewingStaleShift?.id || ''}
+            staffName={previewingStaleShift?.staff?.name || previewingStaleShift?.staff_name || t('common.unknown')}
           />
         </div>
       </div>

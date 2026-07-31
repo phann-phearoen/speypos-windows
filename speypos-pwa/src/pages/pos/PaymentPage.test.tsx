@@ -217,7 +217,11 @@ test('payment lifecycle failure invalidates the current shift and does not navig
 
   await waitFor(() => {
     expect(mocks.mockInvalidateCurrentShift).toHaveBeenCalledWith(
-      'Orders can only be created for an open shift.'
+      'Orders can only be created for an open shift.',
+      expect.objectContaining({
+        lifecycleFlow: 'stale-lifecycle',
+        lifecycleSource: 'payment',
+      })
     );
   });
 
@@ -241,18 +245,10 @@ test('SHIFT_NOT_CURRENT_BUSINESS_DAY redirects to shift page with lifecycle inva
 
   await waitFor(() => {
     expect(mocks.mockInvalidateCurrentShift).toHaveBeenCalledWith(
-      'Shift belongs to a previous business day and can no longer be used.'
-    );
-  });
-
-  await waitFor(() => {
-    expect(mocks.mockNavigate).toHaveBeenCalledWith(
-      '/pos/shift',
+      'Shift belongs to a previous business day and can no longer be used.',
       expect.objectContaining({
-        replace: true,
-        state: expect.objectContaining({
-          lifecycleError: 'Shift belongs to a previous business day and can no longer be used.',
-        }),
+        lifecycleFlow: 'stale-lifecycle',
+        lifecycleSource: 'payment',
       })
     );
   });
@@ -272,14 +268,11 @@ test('stale business-day message redirects to shift page even without errorCode'
 
   await waitFor(() => {
     expect(mocks.mockInvalidateCurrentShift).toHaveBeenCalledWith(
-      'Shift belongs to a previous business day and can no longer be used.'
-    );
-  });
-
-  await waitFor(() => {
-    expect(mocks.mockNavigate).toHaveBeenCalledWith(
-      '/pos/shift',
-      expect.objectContaining({ replace: true })
+      'Shift belongs to a previous business day and can no longer be used.',
+      expect.objectContaining({
+        lifecycleFlow: 'stale-lifecycle',
+        lifecycleSource: 'payment',
+      })
     );
   });
 
