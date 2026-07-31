@@ -20,6 +20,7 @@ const mockTranslation = vi.fn();
 const mockGetStaff = vi.fn();
 const mockGetPreviousDayStatus = vi.fn();
 const mockOpenShiftApi = vi.fn();
+const mockGetCloseDayPreview = vi.fn();
 const mockDayClosePreviewModal = vi.fn();
 const mockDayCloseResultModal = vi.fn();
 
@@ -49,6 +50,7 @@ vi.mock('@/lib/api', () => ({
   },
   shiftApi: {
     getPreviousDayStatus: (...args: any[]) => mockGetPreviousDayStatus(...args),
+    getCloseDayPreview: (...args: any[]) => mockGetCloseDayPreview(...args),
     openShift: (...args: any[]) => mockOpenShiftApi(...args),
   },
 }));
@@ -166,6 +168,14 @@ function setupBaseMocks() {
     data: [
       { id: 'staff-1', name: 'Alice', role: 'staff', status: 'active' },
     ],
+    error: null,
+  });
+
+  mockGetCloseDayPreview.mockResolvedValue({
+    data: {
+      businessDate: '2026-07-31',
+      shifts: [],
+    },
     error: null,
   });
 

@@ -52,6 +52,7 @@ export default function ShiftPage() {
   // Day close modal state
   const [showDayCloseModal, setShowDayCloseModal] = useState(false);
   const [dayCloseTargetDate, setDayCloseTargetDate] = useState<string | null>(null);
+  const [defaultCloseDayBusinessDate, setDefaultCloseDayBusinessDate] = useState<string | null>(null);
   const [dayCloseCompleted, setDayCloseCompleted] = useState(false);
   const [showDayCloseResultModal, setShowDayCloseResultModal] = useState(false);
   const [dayCloseCompletion, setDayCloseCompletion] = useState<DayCloseCompletion | null>(null);
@@ -64,10 +65,24 @@ export default function ShiftPage() {
     setShowDayCloseModal(true);
   };
 
+  const refreshDefaultCloseDayBusinessDate = async (targetDate?: string) => {
+    const result = await shiftApi.getCloseDayPreview(targetDate);
+    if (!result.error && result.data?.businessDate) {
+      setDefaultCloseDayBusinessDate(result.data.businessDate);
+    }
+  };
+
   const refreshPreviousDayStatus = async () => {
     const result = await shiftApi.getPreviousDayStatus();
     if (!result.error && result.data) {
       setPreviousDayStatus(result.data);
+
+      if (isPreviousDayBlocked(result.data) && result.data.previousDate) {
+        setDefaultCloseDayBusinessDate(result.data.previousDate);
+        return;
+      }
+
+      await refreshDefaultCloseDayBusinessDate();
     }
   };
 
@@ -203,6 +218,12 @@ export default function ShiftPage() {
   const closeDayAnimate = closeDayAttention && animateCloseDay;
   const isShiftActionsReady = !checkingActiveShift && !loading && activeStaff.length > 0;
   const closeDayButtonDisabled = dayCloseCompleted;
+  const closeDayTargetDate = previousDayBlocked
+    ? previousDayStatus?.previousDate ?? defaultCloseDayBusinessDate
+    : defaultCloseDayBusinessDate;
+  const closeDayLabel = closeDayTargetDate
+    ? `${t('shift.closeDay')} (${closeDayTargetDate})`
+    : t('shift.closeDay');
 
   useEffect(() => {
     const justClosedShiftAt = (location.state as { justClosedShiftAt?: number } | null)?.justClosedShiftAt;
@@ -304,7 +325,7 @@ export default function ShiftPage() {
                       onClick={() => openDayCloseModal(previousDayStatus.previousDate)}
                     >
                       <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
-                      {t('shift.closeDay')}
+                      {closeDayLabel}
                     </Button>
                   </div>
                 </div>
@@ -459,10 +480,10 @@ export default function ShiftPage() {
                         closeDayButtonDisabled ? 'bg-muted text-muted-foreground border-border shadow-none ring-0 hover:bg-muted' : '',
                         closeDayAnimate ? 'animate-pulse scale-[1.02]' : '',
                       ].join(' ')}
-                      onClick={() => openDayCloseModal()}
+                      onClick={() => openDayCloseModal(closeDayTargetDate ?? undefined)}
                     >
                       <CalendarCheck className="w-4 h-4" />
-                      {t('shift.closeDay')}
+                      {closeDayLabel}
                       {closeDayAttention && (
                         <span className="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold leading-none">
                           {closedShiftCount}
