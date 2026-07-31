@@ -107,4 +107,4 @@ dist
 
 /data/receipts/*
 /data/sync_queue.json
-\\localhost\XP80
+/\\\\localhost\\XP80
