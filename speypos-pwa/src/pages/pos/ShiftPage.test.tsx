@@ -20,7 +20,7 @@ const mockTranslation = vi.fn();
 const mockGetStaff = vi.fn();
 const mockGetPreviousDayStatus = vi.fn();
 const mockOpenShiftApi = vi.fn();
-const mockGetCloseDayPreview = vi.fn();
+const mockGetCloseDayStatus = vi.fn();
 const mockDayClosePreviewModal = vi.fn();
 const mockDayCloseResultModal = vi.fn();
 
@@ -50,7 +50,7 @@ vi.mock('@/lib/api', () => ({
   },
   shiftApi: {
     getPreviousDayStatus: (...args: any[]) => mockGetPreviousDayStatus(...args),
-    getCloseDayPreview: (...args: any[]) => mockGetCloseDayPreview(...args),
+    getCloseDayStatus: (...args: any[]) => mockGetCloseDayStatus(...args),
     openShift: (...args: any[]) => mockOpenShiftApi(...args),
   },
 }));
@@ -171,10 +171,15 @@ function setupBaseMocks() {
     error: null,
   });
 
-  mockGetCloseDayPreview.mockResolvedValue({
+  mockGetCloseDayStatus.mockResolvedValue({
     data: {
       businessDate: '2026-07-31',
-      shifts: [],
+      business_day_id: null,
+      business_day_status: 'OPEN',
+      totalShifts: 0,
+      openShiftsCount: 0,
+      isCloseable: false,
+      reason: 'NO_SHIFTS',
     },
     error: null,
   });
@@ -337,4 +342,28 @@ test('F8: disables Close Day after a successful close and opens the result modal
   expect(await screen.findByTestId('day-close-result-modal')).toBeInTheDocument();
   expect(screen.getByText('2026-07-27')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /close day/i })).toBeDisabled();
+});
+
+test('F9: keeps Close Day disabled after reload when backend reports business day CLOSED', async () => {
+  mockGetPreviousDayStatus.mockResolvedValue({
+    data: { hasPreviousDay: false, todayClosedShiftsCount: 0 },
+    error: null,
+  });
+  mockGetCloseDayStatus.mockResolvedValue({
+    data: {
+      businessDate: '2026-07-31',
+      business_day_id: null,
+      business_day_status: 'CLOSED',
+      totalShifts: 1,
+      openShiftsCount: 0,
+      isCloseable: false,
+      reason: 'DAY_ALREADY_CLOSED',
+    },
+    error: null,
+  });
+
+  renderShiftPageWithState();
+
+  const closeDayButton = await screen.findByRole('button', { name: /close day/i });
+  expect(closeDayButton).toBeDisabled();
 });

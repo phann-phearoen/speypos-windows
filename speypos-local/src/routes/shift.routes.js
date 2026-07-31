@@ -9,6 +9,7 @@ import {
   openShift,
   closeDay,
   getDayCloseReview,
+  getDayCloseStatus,
   getPreviousDayStatus,
 } from '../controllers/shift.controller.js';
 
@@ -17,6 +18,7 @@ const router = Router();
 // Business logic endpoints
 router.post('/shifts/open', openShift);
 router.get('/shift/close-day', getDayCloseReview);
+router.get('/shift/close-day-status', getDayCloseStatus);
 router.post('/shift/close-day', closeDay);
 router.get('/shift/day-status/previous', getPreviousDayStatus);
 

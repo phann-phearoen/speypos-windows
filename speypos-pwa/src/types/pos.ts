@@ -195,6 +195,18 @@ export interface DayClosePreviewResponse {
   shifts: DayCloseShiftSummary[];
 }
 
+export type DayCloseStatusReason = 'DAY_ALREADY_CLOSED' | 'DAY_NOT_READY' | 'NO_SHIFTS' | null;
+
+export interface DayCloseStatusResponse {
+  businessDate: string;
+  business_day_id: string | null;
+  business_day_status: BusinessDayStatus;
+  totalShifts: number;
+  openShiftsCount: number;
+  isCloseable: boolean;
+  reason: DayCloseStatusReason;
+}
+
 export interface DayCloseShiftReport {
   shift: Shift;
   totalOrders: number;

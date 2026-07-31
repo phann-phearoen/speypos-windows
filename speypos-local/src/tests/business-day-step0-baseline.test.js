@@ -10,6 +10,8 @@ let initializeSettings;
 let openShift;
 let getPreviousDayStatus;
 let closeDay;
+let getDayCloseReview;
+let getDayCloseStatus;
 let getNowInStoreTime;
 let contracts;
 
@@ -43,10 +45,18 @@ function makeRes() {
 
 function insertShift(db, { date, status = 'closed' }) {
   const now = Date.now();
+  const shiftId = randomUUID();
   db.prepare(
     `INSERT INTO Shift (id, status, started_at, ended_at, date, telegram_reported_at)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(randomUUID(), status, now - 60000, status === 'closed' ? now : null, date, null);
+  ).run(shiftId, status, now - 60000, status === 'closed' ? now : null, date, null);
+
+  db.prepare(
+    `INSERT INTO StaffShift (id, shift_id, staff_id)
+     VALUES (?, ?, ?)`
+  ).run(randomUUID(), shiftId, staffId);
+
+  return shiftId;
 }
 
 function setMigrationAppliedAt(db, isoDateTime) {
@@ -126,7 +136,7 @@ before(async () => {
 
   ({ initializeDatabase, closeDatabase, getDb } = await import('../storage/database.js'));
   ({ initializeSettings } = await import('../services/settings.service.js'));
-  ({ openShift, getPreviousDayStatus, closeDay } = await import('../controllers/shift.controller.js'));
+  ({ openShift, getPreviousDayStatus, closeDay, getDayCloseReview, getDayCloseStatus } = await import('../controllers/shift.controller.js'));
   ({ getNowInStoreTime } = await import('../services/time.service.js'));
 
   const contractRaw = await fs.readFile(
@@ -223,4 +233,76 @@ test('Step0 contract: close day blocked when a shift remains open', async () => 
   await closeDay(req, res);
 
   assert.deepEqual(projectCloseDayBlocked(res), contracts.closeDayBlockedWhenOpenShiftExists);
+});
+
+test('Step0: day-close preview returns CLOSED status when legacy day is already closed', async () => {
+  const db = getDb();
+  const targetDate = '2026-07-27';
+
+  insertShift(db, { date: targetDate, status: 'closed' });
+  db.prepare('INSERT INTO DayClose (date, closed_at) VALUES (?, ?)').run(targetDate, Date.now());
+
+  const req = { query: { date: targetDate } };
+  const res = makeRes();
+  await getDayCloseReview(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.businessDate, targetDate);
+  assert.equal(res.body.business_day_status, 'CLOSED');
+  assert.equal(res.body.business_day_id, null);
+});
+
+test('Step0: close day conflict includes CLOSED business_day_status in legacy mode', async () => {
+  const db = getDb();
+  const targetDate = '2026-07-28';
+
+  insertShift(db, { date: targetDate, status: 'closed' });
+  db.prepare('INSERT INTO DayClose (date, closed_at) VALUES (?, ?)').run(targetDate, Date.now());
+
+  const req = { query: { date: targetDate } };
+  const res = makeRes();
+  await closeDay(req, res);
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.error, 'DAY_ALREADY_CLOSED');
+  assert.equal(res.body.business_day_status, 'CLOSED');
+  assert.equal(res.body.business_day_id, null);
+});
+
+test('Step0: close-day-status returns definitive CLOSED status in legacy mode', () => {
+  const db = getDb();
+  const targetDate = '2026-07-29';
+
+  insertShift(db, { date: targetDate, status: 'closed' });
+  db.prepare('INSERT INTO DayClose (date, closed_at) VALUES (?, ?)').run(targetDate, Date.now());
+
+  const req = { query: { date: targetDate } };
+  const res = makeRes();
+  getDayCloseStatus(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.businessDate, targetDate);
+  assert.equal(res.body.business_day_status, 'CLOSED');
+  assert.equal(res.body.business_day_id, null);
+  assert.equal(res.body.isCloseable, false);
+  assert.equal(res.body.reason, 'DAY_ALREADY_CLOSED');
+});
+
+test('Step0: close-day-status returns DAY_NOT_READY when open shifts exist', () => {
+  const db = getDb();
+  const targetDate = '2026-07-30';
+
+  insertShift(db, { date: targetDate, status: 'closed' });
+  insertShift(db, { date: targetDate, status: 'open' });
+
+  const req = { query: { date: targetDate } };
+  const res = makeRes();
+  getDayCloseStatus(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.businessDate, targetDate);
+  assert.equal(res.body.business_day_status, 'OPEN');
+  assert.equal(res.body.isCloseable, false);
+  assert.equal(res.body.reason, 'DAY_NOT_READY');
+  assert.equal(res.body.openShiftsCount, 1);
 });

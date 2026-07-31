@@ -12,7 +12,7 @@ import { DayClosePreviewModal } from '@/components/pos/DayClosePreviewModal';
 import { DayCloseResultModal } from '@/components/pos/DayCloseResultModal';
 import { StaleShiftsModal } from '@/components/pos/StaleShiftsModal';
 import { Button } from '@/components/ui/button';
-import type { DayCloseCompletion, Staff, Shift, PreviousDayStatus } from '@/types/pos';
+import type { BusinessDayStatus, DayCloseCompletion, Staff, Shift, PreviousDayStatus } from '@/types/pos';
 
 function isPreviousDayBlocked(status: PreviousDayStatus | null): boolean {
   if (!status?.hasPreviousDay) {
@@ -53,6 +53,7 @@ export default function ShiftPage() {
   const [showDayCloseModal, setShowDayCloseModal] = useState(false);
   const [dayCloseTargetDate, setDayCloseTargetDate] = useState<string | null>(null);
   const [defaultCloseDayBusinessDate, setDefaultCloseDayBusinessDate] = useState<string | null>(null);
+  const [defaultCloseDayBusinessStatus, setDefaultCloseDayBusinessStatus] = useState<BusinessDayStatus | null>(null);
   const [dayCloseCompleted, setDayCloseCompleted] = useState(false);
   const [showDayCloseResultModal, setShowDayCloseResultModal] = useState(false);
   const [dayCloseCompletion, setDayCloseCompletion] = useState<DayCloseCompletion | null>(null);
@@ -65,10 +66,11 @@ export default function ShiftPage() {
     setShowDayCloseModal(true);
   };
 
-  const refreshDefaultCloseDayBusinessDate = async (targetDate?: string) => {
-    const result = await shiftApi.getCloseDayPreview(targetDate);
-    if (!result.error && result.data?.businessDate) {
-      setDefaultCloseDayBusinessDate(result.data.businessDate);
+  const refreshDefaultCloseDayBusinessStatus = async (targetDate?: string) => {
+    const result = await shiftApi.getCloseDayStatus(targetDate);
+    if (!result.error && result.data) {
+      setDefaultCloseDayBusinessDate(result.data.businessDate || targetDate || null);
+      setDefaultCloseDayBusinessStatus(result.data.business_day_status ?? null);
     }
   };
 
@@ -78,11 +80,11 @@ export default function ShiftPage() {
       setPreviousDayStatus(result.data);
 
       if (isPreviousDayBlocked(result.data) && result.data.previousDate) {
-        setDefaultCloseDayBusinessDate(result.data.previousDate);
+        await refreshDefaultCloseDayBusinessStatus(result.data.previousDate);
         return;
       }
 
-      await refreshDefaultCloseDayBusinessDate();
+      await refreshDefaultCloseDayBusinessStatus();
     }
   };
 
@@ -217,7 +219,7 @@ export default function ShiftPage() {
   const closeDayAttention = closedShiftCount >= 2;
   const closeDayAnimate = closeDayAttention && animateCloseDay;
   const isShiftActionsReady = !checkingActiveShift && !loading && activeStaff.length > 0;
-  const closeDayButtonDisabled = dayCloseCompleted;
+  const closeDayButtonDisabled = dayCloseCompleted || defaultCloseDayBusinessStatus === 'CLOSED';
   const closeDayTargetDate = previousDayBlocked
     ? previousDayStatus?.previousDate ?? defaultCloseDayBusinessDate
     : defaultCloseDayBusinessDate;

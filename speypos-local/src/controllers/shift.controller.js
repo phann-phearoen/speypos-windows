@@ -42,6 +42,47 @@ function addBusinessDayFieldsToShiftList(shifts) {
   return shifts.map((shift) => addBusinessDayFieldsToShift(shift));
 }
 
+function resolveDayCloseStatus({ businessDate, shiftsForDate }) {
+  const totalShifts = shiftsForDate.length;
+  const openShiftsCount = shiftsForDate.filter((shift) => shift.status !== 'closed').length;
+
+  let businessDayId = null;
+  let businessDayStatus = 'OPEN';
+
+  if (isBusinessDayEnabled()) {
+    const day = businessDayRepo.getByBusinessDate('default', businessDate);
+    businessDayId = day?.id || null;
+    businessDayStatus = day?.status || 'OPEN';
+  } else {
+    const dayClose = getDayClose(businessDate);
+    businessDayStatus = dayClose ? 'CLOSED' : 'OPEN';
+  }
+
+  let reason = null;
+  let isCloseable = true;
+
+  if (businessDayStatus === 'CLOSED') {
+    isCloseable = false;
+    reason = 'DAY_ALREADY_CLOSED';
+  } else if (totalShifts === 0) {
+    isCloseable = false;
+    reason = 'NO_SHIFTS';
+  } else if (openShiftsCount > 0) {
+    isCloseable = false;
+    reason = 'DAY_NOT_READY';
+  }
+
+  return {
+    businessDate,
+    business_day_id: businessDayId,
+    business_day_status: businessDayStatus,
+    totalShifts,
+    openShiftsCount,
+    isCloseable,
+    reason,
+  };
+}
+
 /**
  * Handles the request to get all shifts.
  */
@@ -320,14 +361,35 @@ export async function getDayCloseReview(req, res) {
   try {
     const targetDate = typeof req.query.date === 'string' && req.query.date ? req.query.date : undefined;
     const reviewData = await shiftService.getReviewDataForDayClose(targetDate);
-    if (isBusinessDayEnabled()) {
-      const day = businessDayRepo.getByBusinessDate('default', reviewData.businessDate);
-      reviewData.business_day_id = day?.id || null;
-      reviewData.business_day_status = day?.status || null;
-    }
+    const status = resolveDayCloseStatus({
+      businessDate: reviewData.businessDate,
+      shiftsForDate: reviewData.shifts,
+    });
+
+    reviewData.business_day_id = status.business_day_id;
+    reviewData.business_day_status = status.business_day_status;
+
     res.status(200).json(reviewData);
   } catch (error) {
     logger.error('Failed to get day close review data', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+/**
+ * Returns lightweight status data used to render and gate the Close Day button.
+ */
+export function getDayCloseStatus(req, res) {
+  try {
+    const targetDate = typeof req.query.date === 'string' && req.query.date ? req.query.date : undefined;
+    const { businessDate, shiftsForDate } = businessDayService.getDayCloseContext({ targetDate });
+    const status = resolveDayCloseStatus({ businessDate, shiftsForDate });
+    res.status(200).json(status);
+  } catch (error) {
+    logger.error('Failed to get day close status', {
       error: error.message,
       stack: error.stack,
     });
@@ -362,6 +424,8 @@ export async function closeDay(req, res) {
         error: 'DAY_ALREADY_CLOSED',
         message: `Business day ${closedDate} is already closed.`,
         closedAt: existingDayClose.closed_at,
+        business_day_id: null,
+        business_day_status: 'CLOSED',
       });
     }
 
@@ -399,12 +463,18 @@ export async function closeDay(req, res) {
         error: 'DAY_ALREADY_CLOSED',
         message: `Business day ${closedDate} is already closed.`,
         closedAt: dayClose?.closed_at ?? null,
+        business_day_id: null,
+        business_day_status: 'CLOSED',
       });
     }
 
     await shiftService.sendDayCloseNotification(report);
 
-    res.status(200).json(report);
+    res.status(200).json({
+      ...report,
+      business_day_id: null,
+      business_day_status: 'CLOSED',
+    });
   } catch (error) {
     if (error.code === 'DAY_NOT_READY') {
       logger.warn('Day close rejected because the business day is not ready.', {
