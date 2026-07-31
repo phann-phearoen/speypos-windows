@@ -135,11 +135,12 @@ export function DayClosePreviewModal({
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('shift.dayClose.title')}</DialogTitle>
-          {businessDateLabel && (
-            <p className="text-sm text-muted-foreground">
-              {t('shift.dayClose.businessDate')}: <span className="font-medium text-foreground">{businessDateLabel}</span>
-            </p>
-          )}
+          {/* Business Date */}
+          <div className="flex items-center gap-2 mb-3 text-sm">
+            <CalendarDays className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">{t('shift.dayClose.businessDate')}:</span>
+            <span className="font-medium">{formatDateString(preview.businessDate)}</span>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -158,18 +159,6 @@ export function DayClosePreviewModal({
             </div>
           ) : (
             <>
-              {/* Business Date */}
-              <div className="flex items-center gap-2 mb-3 text-sm">
-                <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('shift.dayClose.businessDate')}:</span>
-                <span className="font-medium">{formatDateString(preview.businessDate)}</span>
-                {preview.business_day_status && (
-                  <Badge className="ml-1 bg-muted text-foreground border-border">
-                    {preview.business_day_status}
-                  </Badge>
-                )}
-              </div>
-
               {businessDayAlreadyClosed && (
                 <div className="mb-3 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-800 text-sm">
                   {t('shift.dayClose.alreadyClosed')}

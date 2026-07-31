@@ -598,6 +598,15 @@ const translations: Record<string, TranslationDictionary> = {
     'shift.dayClose.alreadyClosed': 'ថ្ងៃអាជីវកម្មនេះត្រូវបានបិទរួចហើយ។',
     'shift.dayClose.success': 'បិទថ្ងៃដោយជោគជ័យ',
     'shift.dayClose.successDesc': 'វេនទាំងអស់ត្រូវបានបិទ និងរបាយការណ៍ត្រូវបានផ្ញើ',
+    'shift.dayClose.result.title': 'លទ្ធផលបិទថ្ងៃ',
+    'shift.dayClose.result.closedTitle': 'បានបិទថ្ងៃដោយជោគជ័យ',
+    'shift.dayClose.result.closedDesc': 'វេនទាំងអស់ត្រូវបានបិទ និងរបាយការណ៍ត្រូវបានផ្ញើរួចរាល់។',
+    'shift.dayClose.result.alreadyClosedTitle': 'ថ្ងៃអាជីវកម្មត្រូវបានបិទរួចហើយ',
+    'shift.dayClose.result.alreadyClosedDesc': 'ថ្ងៃអាជីវកម្មនេះត្រូវបានបិទរួចហើយ។ មិនចាំបាច់ធ្វើសកម្មភាពបន្ថែមទេ។',
+    'shift.dayClose.result.businessDate': 'កាលបរិច្ឆេទអាជីវកម្ម',
+    'shift.dayClose.result.shifts': 'វេន',
+    'shift.dayClose.result.netRevenue': 'ចំណូលសុទ្ធ',
+    'shift.dayClose.result.dismiss': 'រួចរាល់',
     
     // Admin Layout
     'admin.dashboard': 'ផ្ទាំងគ្រប់គ្រង',
