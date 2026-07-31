@@ -1,0 +1,92 @@
+# SpeyPOS Receipt Printing Specification (Generalized)
+
+version: 1.0
+description: >
+  System-agnostic specification for the receipt printing workflow, 
+  rendering engine, and script support implementation.
+
+workflow:
+  trigger:
+    - Transaction completion (automated).
+    - Manual request (reprint).
+  
+  bridge_layer:
+    interface: printReceipt(orderId, mode)
+    description: >
+      A bridge interface between the web frontend and the native host.
+      'mode' parameter handles 'initial' (one-time) vs 'reprint' (unlimited) logic.
+
+  queue_management:
+    persistence: Local JSON-based storage.
+    atomic_pickup: >
+      Jobs must be processed one-by-one. Each pickup must be atomic and update 
+      the job status to 'processing' immediately to prevent race conditions or 
+      duplicate prints in concurrent environments.
+    background_execution: >
+      Executed by a dedicated background process/worker. 
+      Supports 'Fire and Forget' execution to keep the UI non-blocking.
+      Requires automatic retries with exponential backoff on connection failure.
+
+rendering_engine:
+  technology: Canvas-based Graphical Rendering (Image-to-Raster)
+  workflow:
+    1. height_calculation: Dynamic calculation based on item count, customizations, and metadata.
+    2. canvas_creation: Initialize a virtual canvas with fixed width (standard 576 dots / 72mm).
+    3. drawing: Render text, lines, and branding using system-level font rendering.
+    4. cropping: Crop the resulting image to the exact content height to save paper.
+    5. rasterization: Convert the multi-bit image into 1-bit black/white data for thermal heads.
+  
+  language_support:
+    khmer: >
+      Khmer language is supported by rendering the script directly to a bitmap 
+      using the host system's text engine. This ensures complex glyph shaping, 
+      script combining, and vowel placement are handled before sending data to 
+      the printer, bypassing the need for built-in printer fonts.
+    multilingual: Supports dynamic switching between primary and secondary languages.
+
+esc_pos_implementation:
+  command_set: Standard ESC/POS (Epson/Star compatible).
+  raster_command: GS v 0 (Raster bit image).
+  cut_command: GS V A 0 (Feed and full cut).
+  thresholding: Simple grayscale average with 128-level threshold for 1-bit conversion.
+
+transport_layer:
+  protocols: 
+    - RAW TCP (Standard Port 9100).
+    - USB (Bulk Transfer / Virtual Serial).
+  management: 
+    - Direct socket/port connection.
+    - Connection timeout (suggested 5000ms).
+
+configuration:
+  settings_key: printer.config
+  parameters:
+    - enabled: Boolean toggle to bypass the printing queue.
+    - endpoint: Host address (IP) or Port name (USB/COM).
+    - copy_counts: Configurable count per receipt variant (e.g., INTERNAL, VOID).
+
+formatting_logic:
+  grouping_strategy:
+    type: Name-based Variant Grouping
+    description: >
+      Items are grouped by their base product name to ensure a clean, readable 
+      list even when multiple variants of the same product are ordered.
+    workflow:
+      1. Grouping: Create a map where the key is the 'Product Name' and the 
+         value is a list of all order item instances with that name.
+      2. Parent Header: For each unique product name, print a header line 
+         (e.g., prefixed with '*').
+      3. Variant Lines: For each instance under that name, print a sub-line 
+         (e.g., prefixed with '  -').
+  
+  content_details:
+    item_metadata:
+      customizations: Rendered as a comma-separated list of values (e.g., "Hot", "Less Sugar").
+      toppings: Rendered with their name and quantity (e.g., "Boba x2", "Whipped Cream").
+      combined_display: >
+        Details are combined into a single string inside parentheses:
+        "  - (Detail1, Detail2, Topping Name xQty) x [Item Quantity]"
+    
+    totals_area:
+      void_logic: If order is VOID, display 'Reason' and 'Note' instead of 'Total' and 'Payment Type'.
+      alignment: Product names are left-aligned; final prices are right-aligned.

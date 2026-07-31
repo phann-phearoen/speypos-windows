@@ -1,0 +1,41 @@
+{
+  "previousDayStatusNoHistory": {
+    "statusCode": 200,
+    "body": {
+      "hasPreviousDay": false,
+      "todayClosedShiftsCount": 0,
+      "hasEnforcementStartDate": true
+    }
+  },
+  "openShiftBlockedByUnclosedPreviousDay": {
+    "statusCode": 409,
+    "body": {
+      "error": "PREVIOUS_DAY_NOT_CLOSED",
+      "hasPreviousDate": true
+    }
+  },
+  "openShiftAllowedWhenPreviousDayClosed": {
+    "statusCode": 201,
+    "body": {
+      "hasId": true,
+      "status": "open",
+      "hasDate": true,
+      "hasStaffId": true,
+      "hasStaffObject": true
+    }
+  },
+  "closeDayHappyPath": {
+    "statusCode": 200,
+    "body": {
+      "hasBusinessDate": true,
+      "hasShiftSummaries": true,
+      "hasCombinedSummary": true
+    }
+  },
+  "closeDayBlockedWhenOpenShiftExists": {
+    "statusCode": 409,
+    "body": {
+      "error": "DAY_NOT_READY"
+    }
+  }
+}

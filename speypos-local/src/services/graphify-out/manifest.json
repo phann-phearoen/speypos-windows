@@ -1,0 +1,82 @@
+{
+  "cloudHandshake.service.js": {
+    "mtime": 1770892334.1480656,
+    "ast_hash": "8b9e8489988e1af0ae9f3d7dafe16851",
+    "semantic_hash": "8b9e8489988e1af0ae9f3d7dafe16851"
+  },
+  "cloudIngest.service.js": {
+    "mtime": 1782700501.49057,
+    "ast_hash": "625d7866af73e86731f09b73b7d595c6",
+    "semantic_hash": "625d7866af73e86731f09b73b7d595c6"
+  },
+  "display.service.js": {
+    "mtime": 1768007479.0,
+    "ast_hash": "28c873d10b1ad207bd1d74d36c816675",
+    "semantic_hash": "28c873d10b1ad207bd1d74d36c816675"
+  },
+  "maintenance.service.js": {
+    "mtime": 1781682441.3618562,
+    "ast_hash": "fb40076868789af067be6adaf49e41cf",
+    "semantic_hash": "fb40076868789af067be6adaf49e41cf"
+  },
+  "money.service.js": {
+    "mtime": 1768363545.0,
+    "ast_hash": "a04bfe8441253766b79c86323f0ab6d5",
+    "semantic_hash": "a04bfe8441253766b79c86323f0ab6d5"
+  },
+  "outbox.dispatchers.js": {
+    "mtime": 1779869933.4830976,
+    "ast_hash": "84a0c26be97297fb85c6d5b130c2a380",
+    "semantic_hash": "84a0c26be97297fb85c6d5b130c2a380"
+  },
+  "outbox.service.js": {
+    "mtime": 1779868889.7006884,
+    "ast_hash": "764f10fdcb5544b8b537c00b8997b22c",
+    "semantic_hash": "764f10fdcb5544b8b537c00b8997b22c"
+  },
+  "outbox.worker.js": {
+    "mtime": 1782700501.4965868,
+    "ast_hash": "13885e2b39d9c87823e65e7044f7dfd9",
+    "semantic_hash": "13885e2b39d9c87823e65e7044f7dfd9"
+  },
+  "recovery.service.js": {
+    "mtime": 1770736046.754984,
+    "ast_hash": "d7fc666825a34c67afa361d157dbfc2b",
+    "semantic_hash": "d7fc666825a34c67afa361d157dbfc2b"
+  },
+  "settings.service.js": {
+    "mtime": 1782700959.394305,
+    "ast_hash": "8220e4e57a35d7b60f67121081d3bff9",
+    "semantic_hash": "8220e4e57a35d7b60f67121081d3bff9"
+  },
+  "setup.service.js": {
+    "mtime": 1769665135.8503306,
+    "ast_hash": "d9eade881952309bd40745cabd6dd42c",
+    "semantic_hash": "d9eade881952309bd40745cabd6dd42c"
+  },
+  "shift.service.js": {
+    "mtime": 1780027001.626098,
+    "ast_hash": "ad3aad2a85029f04da817fd2ae4d5c03",
+    "semantic_hash": "ad3aad2a85029f04da817fd2ae4d5c03"
+  },
+  "store.service.js": {
+    "mtime": 1769665135.8595095,
+    "ast_hash": "171ca0c729dfef0fad18ce1e58eaf6b9",
+    "semantic_hash": "171ca0c729dfef0fad18ce1e58eaf6b9"
+  },
+  "telegram.formatter.js": {
+    "mtime": 1779843290.1026611,
+    "ast_hash": "ee5ff252be43189f26411309e3fdd921",
+    "semantic_hash": "ee5ff252be43189f26411309e3fdd921"
+  },
+  "telegram.service.js": {
+    "mtime": 1782700501.48638,
+    "ast_hash": "259f2ee8f744ed38fc49c91b0a1323bf",
+    "semantic_hash": "259f2ee8f744ed38fc49c91b0a1323bf"
+  },
+  "time.service.js": {
+    "mtime": 1779849380.7313437,
+    "ast_hash": "378eb027b5f414bff25f725452f08ab5",
+    "semantic_hash": "378eb027b5f414bff25f725452f08ab5"
+  }
+}

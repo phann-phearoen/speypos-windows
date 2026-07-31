@@ -1,0 +1,246 @@
+{
+  "communities": {
+    "0": [
+      "shift_service",
+      "shift_service_generatedayclosereport",
+      "shift_service_getdayclosecontext",
+      "shift_service_getreviewdatafordayclose",
+      "telegram_formatter",
+      "telegram_formatter_formatdayclosemessage",
+      "telegram_formatter_formatorderidentifier",
+      "telegram_formatter_formatordermessage",
+      "telegram_formatter_formatshiftclosemessage",
+      "telegram_formatter_formattoppingquantity",
+      "telegram_formatter_formatvoidordermessage",
+      "telegram_formatter_getlocalization",
+      "telegram_formatter_t",
+      "telegram_formatter_translations",
+      "telegram_service",
+      "telegram_service_send",
+      "telegram_service_sendordernotification",
+      "telegram_service_sendshiftclosenotification",
+      "telegram_service_sendtelegramevent"
+    ],
+    "1": [
+      "outbox_dispatchers",
+      "outbox_dispatchers_dispatchcloudflush",
+      "outbox_dispatchers_dispatchcloudminibatch",
+      "outbox_dispatchers_dispatchordertelegram",
+      "outbox_dispatchers_dispatchoutboxevent",
+      "outbox_dispatchers_dispatchreceiptprint",
+      "outbox_dispatchers_dispatchshifttelegram",
+      "outbox_dispatchers_getorderorthrow",
+      "outbox_dispatchers_getshiftorthrow",
+      "outbox_dispatchers_isoutboxretryattempt",
+      "outbox_worker",
+      "outbox_worker_computebackoffms",
+      "outbox_worker_processbatch",
+      "outbox_worker_runoutboxworkeronce",
+      "outbox_worker_startoutboxworker",
+      "outbox_worker_stopoutboxworker",
+      "outbox_worker_tick",
+      "settings_service_getoutboxconfig"
+    ],
+    "2": [
+      "settings_service",
+      "settings_service_cache",
+      "settings_service_castvalue",
+      "settings_service_defaults",
+      "settings_service_get",
+      "settings_service_getboolean",
+      "settings_service_getjson",
+      "settings_service_getnumber",
+      "settings_service_getoutboxmode",
+      "settings_service_getstring",
+      "settings_service_initializesettings",
+      "settings_service_set",
+      "setup_service",
+      "setup_service_issysteminitialized",
+      "setup_service_performinitialsetup"
+    ],
+    "3": [
+      "cloudingest_service",
+      "cloudingest_service_buildorderevent",
+      "cloudingest_service_currencymetadata",
+      "cloudingest_service_getconfig",
+      "cloudingest_service_postjson",
+      "cloudingest_service_toiso",
+      "cloudingest_service_tomajor",
+      "cloudingest_service_uploadordersbatch",
+      "maintenance_service",
+      "maintenance_service_optimizedatabase",
+      "maintenance_service_performfinalsyncattempt",
+      "maintenance_service_purgeolddata",
+      "maintenance_service_purgeoldlogs",
+      "maintenance_service_runmaintenance"
+    ],
+    "4": [
+      "money_service",
+      "money_service_format",
+      "store_service",
+      "store_service_currencymetadata",
+      "store_service_formatmoney",
+      "store_service_getcurrency",
+      "store_service_getlanguage",
+      "store_service_getstore",
+      "store_service_initializestore",
+      "store_service_updatestore",
+      "time_service",
+      "time_service_getnowinstoretime",
+      "time_service_getstoredatefromutcdate",
+      "time_service_initializestoretimezone"
+    ],
+    "5": [
+      "outbox_service",
+      "outbox_service_buildorderevents",
+      "outbox_service_buildshiftcloseevents",
+      "outbox_service_buildvoidevents",
+      "outbox_service_queueordersideeffects",
+      "outbox_service_queueshiftclosesideeffects",
+      "outbox_service_queuevoidsideeffects"
+    ],
+    "6": [
+      "recovery_service",
+      "recovery_service_getunprintedorders",
+      "recovery_service_getunreportedorders",
+      "recovery_service_getunreportedshifts",
+      "recovery_service_retryunprintedorders",
+      "recovery_service_retryunreportedtelegrams"
+    ],
+    "7": [
+      "display_service",
+      "display_service_displaysession",
+      "display_service_getcurrentdisplaysession",
+      "display_service_updatedisplaysession"
+    ],
+    "8": [
+      "cloudhandshake_service",
+      "cloudhandshake_service_normalizebaseurl",
+      "cloudhandshake_service_performhandshake"
+    ]
+  },
+  "cohesion": {
+    "0": 0.25146198830409355,
+    "1": 0.2679738562091503,
+    "2": 0.19047619047619047,
+    "3": 0.26373626373626374,
+    "4": 0.18681318681318682,
+    "5": 0.42857142857142855,
+    "6": 0.5333333333333333,
+    "7": 0.5,
+    "8": 1.0
+  },
+  "gods": [
+    {
+      "id": "settings_service_getoutboxconfig",
+      "label": "getOutboxConfig()",
+      "degree": 10
+    },
+    {
+      "id": "cloudingest_service_uploadordersbatch",
+      "label": "uploadOrdersBatch()",
+      "degree": 9
+    },
+    {
+      "id": "outbox_dispatchers_dispatchoutboxevent",
+      "label": "dispatchOutboxEvent()",
+      "degree": 8
+    },
+    {
+      "id": "telegram_formatter_formatordermessage",
+      "label": "formatOrderMessage()",
+      "degree": 7
+    },
+    {
+      "id": "telegram_service_sendtelegramevent",
+      "label": "sendTelegramEvent()",
+      "degree": 6
+    },
+    {
+      "id": "maintenance_service_runmaintenance",
+      "label": "runMaintenance()",
+      "degree": 5
+    },
+    {
+      "id": "outbox_dispatchers_dispatchordertelegram",
+      "label": "dispatchOrderTelegram()",
+      "degree": 5
+    },
+    {
+      "id": "outbox_dispatchers_dispatchshifttelegram",
+      "label": "dispatchShiftTelegram()",
+      "degree": 5
+    },
+    {
+      "id": "outbox_dispatchers_dispatchcloudminibatch",
+      "label": "dispatchCloudMiniBatch()",
+      "degree": 5
+    },
+    {
+      "id": "outbox_dispatchers_dispatchcloudflush",
+      "label": "dispatchCloudFlush()",
+      "degree": 5
+    }
+  ],
+  "surprises": [
+    {
+      "source": "dispatchCloudFlush()",
+      "target": "uploadOrdersBatch()",
+      "source_files": [
+        "outbox.dispatchers.js",
+        "cloudIngest.service.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "dispatchCloudMiniBatch()",
+      "target": "uploadOrdersBatch()",
+      "source_files": [
+        "outbox.dispatchers.js",
+        "cloudIngest.service.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "getNowInStoreTime()",
+      "target": "format()",
+      "source_files": [
+        "time.service.js",
+        "money.service.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "getStoreDateFromUtcDate()",
+      "target": "format()",
+      "source_files": [
+        "time.service.js",
+        "money.service.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "dispatchOrderTelegram()",
+      "target": "sendOrderNotification()",
+      "source_files": [
+        "outbox.dispatchers.js",
+        "telegram.service.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
