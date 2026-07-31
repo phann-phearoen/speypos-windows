@@ -176,10 +176,10 @@ function setupBaseMocks() {
       businessDate: '2026-07-31',
       business_day_id: null,
       business_day_status: 'OPEN',
-      totalShifts: 0,
+      totalShifts: 1,
       openShiftsCount: 0,
-      isCloseable: false,
-      reason: 'NO_SHIFTS',
+      isCloseable: true,
+      reason: null,
     },
     error: null,
   });
@@ -358,6 +358,30 @@ test('F9: keeps Close Day disabled after reload when backend reports business da
       openShiftsCount: 0,
       isCloseable: false,
       reason: 'DAY_ALREADY_CLOSED',
+    },
+    error: null,
+  });
+
+  renderShiftPageWithState();
+
+  const closeDayButton = await screen.findByRole('button', { name: /close day/i });
+  expect(closeDayButton).toBeDisabled();
+});
+
+test('F10: keeps Close Day disabled when day has not started yet (0 open shifts, 0 total shifts)', async () => {
+  mockGetPreviousDayStatus.mockResolvedValue({
+    data: { hasPreviousDay: false, todayClosedShiftsCount: 0 },
+    error: null,
+  });
+  mockGetCloseDayStatus.mockResolvedValue({
+    data: {
+      businessDate: '2026-07-31',
+      business_day_id: null,
+      business_day_status: 'OPEN',
+      totalShifts: 0,
+      openShiftsCount: 0,
+      isCloseable: false,
+      reason: 'NO_SHIFTS',
     },
     error: null,
   });

@@ -54,6 +54,8 @@ export default function ShiftPage() {
   const [dayCloseTargetDate, setDayCloseTargetDate] = useState<string | null>(null);
   const [defaultCloseDayBusinessDate, setDefaultCloseDayBusinessDate] = useState<string | null>(null);
   const [defaultCloseDayBusinessStatus, setDefaultCloseDayBusinessStatus] = useState<BusinessDayStatus | null>(null);
+  const [defaultCloseDayTotalShifts, setDefaultCloseDayTotalShifts] = useState<number | null>(null);
+  const [defaultCloseDayOpenShiftsCount, setDefaultCloseDayOpenShiftsCount] = useState<number | null>(null);
   const [dayCloseCompleted, setDayCloseCompleted] = useState(false);
   const [showDayCloseResultModal, setShowDayCloseResultModal] = useState(false);
   const [dayCloseCompletion, setDayCloseCompletion] = useState<DayCloseCompletion | null>(null);
@@ -71,6 +73,8 @@ export default function ShiftPage() {
     if (!result.error && result.data) {
       setDefaultCloseDayBusinessDate(result.data.businessDate || targetDate || null);
       setDefaultCloseDayBusinessStatus(result.data.business_day_status ?? null);
+      setDefaultCloseDayTotalShifts(result.data.totalShifts);
+      setDefaultCloseDayOpenShiftsCount(result.data.openShiftsCount);
     }
   };
 
@@ -219,7 +223,10 @@ export default function ShiftPage() {
   const closeDayAttention = closedShiftCount >= 2;
   const closeDayAnimate = closeDayAttention && animateCloseDay;
   const isShiftActionsReady = !checkingActiveShift && !loading && activeStaff.length > 0;
-  const closeDayButtonDisabled = dayCloseCompleted || defaultCloseDayBusinessStatus === 'CLOSED';
+  const closeDayDayNotStarted =
+    defaultCloseDayTotalShifts === 0 && defaultCloseDayOpenShiftsCount === 0;
+  const closeDayButtonDisabled =
+    dayCloseCompleted || defaultCloseDayBusinessStatus === 'CLOSED' || closeDayDayNotStarted;
   const closeDayTargetDate = previousDayBlocked
     ? previousDayStatus?.previousDate ?? defaultCloseDayBusinessDate
     : defaultCloseDayBusinessDate;
