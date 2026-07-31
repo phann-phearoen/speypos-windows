@@ -70,7 +70,7 @@ export async function sendEscPosBuffer(printerName, escPosBuffer) {
   const printer = new ThermalPrinter(options);
 
   // Connection check: fs.existsSync (used by File interface) can be unreliable
-  // for UNC paths, so we skip it for direct paths and rely on the execute() catch.
+  // for UNC paths, so we skip it for direct paths and rely on the raw() write/catch.
   if (!isDirectPath) {
     const isConnected = await printer.isPrinterConnected();
     if (!isConnected) {
@@ -87,8 +87,8 @@ export async function sendEscPosBuffer(printerName, escPosBuffer) {
 
   // Send the ESC/POS buffer directly — no additional commands are added here
   // because the buffer already contains the complete image + cut command.
-  printer.raw(escPosBuffer);
-  await printer.execute();
+  // `raw()` already executes the write on the selected interface.
+  await printer.raw(escPosBuffer);
 
   logger.info('ESC/POS transport: buffer sent successfully', {
     printerName,
