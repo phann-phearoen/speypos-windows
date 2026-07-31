@@ -20,6 +20,8 @@ const mockTranslation = vi.fn();
 const mockGetStaff = vi.fn();
 const mockGetPreviousDayStatus = vi.fn();
 const mockOpenShiftApi = vi.fn();
+const mockDayClosePreviewModal = vi.fn();
+const mockDayCloseResultModal = vi.fn();
 
 vi.mock('@/contexts/ShiftContext', () => ({
   useShift: () => mockUseShift(),
@@ -64,7 +66,63 @@ vi.mock('@/components/StoreBrand', () => ({
 }));
 
 vi.mock('@/components/pos/DayClosePreviewModal', () => ({
-  DayClosePreviewModal: () => null,
+  DayClosePreviewModal: (props: any) => {
+    mockDayClosePreviewModal(props);
+    if (!props.open) {
+      return null;
+    }
+
+    return (
+      <div data-testid="day-close-preview-modal">
+        <button
+          type="button"
+          onClick={() =>
+            props.onComplete({
+              status: 'closed',
+              businessDate: '2026-07-27',
+              business_day_status: 'CLOSED',
+              response: {
+                businessDate: '2026-07-27',
+                shiftSummaries: [],
+                combinedSummary: {
+                  totalOrders: 0,
+                  totalRevenue: 0,
+                  totalItems: 0,
+                  revenueByPaymentType: {},
+                  grandTotalItems: 0,
+                  voidedOrders: 0,
+                  voidedAmount: 0,
+                  voidedItems: 0,
+                  netRevenue: 0,
+                },
+                business_day_id: 'business-day-1',
+                business_day_status: 'CLOSED',
+              },
+            })
+          }
+        >
+          complete day close
+        </button>
+      </div>
+    );
+  },
+}));
+vi.mock('@/components/pos/DayCloseResultModal', () => ({
+  DayCloseResultModal: (props: any) => {
+    mockDayCloseResultModal(props);
+    if (!props.open) {
+      return null;
+    }
+
+    return (
+      <div data-testid="day-close-result-modal">
+        <div>{props.result?.businessDate}</div>
+        <button type="button" onClick={props.onClose}>
+          close result
+        </button>
+      </div>
+    );
+  },
 }));
 vi.mock('@/components/pos/StaleShiftsModal', () => ({
   StaleShiftsModal: () => null,
@@ -251,4 +309,22 @@ test('F7: lifecycle invalidation state keeps user on shift page without bouncing
     expect.stringContaining('/pos/order'),
     expect.anything()
   );
+});
+
+test('F8: disables Close Day after a successful close and opens the result modal', async () => {
+  mockGetPreviousDayStatus.mockResolvedValue({
+    data: { hasPreviousDay: false, todayClosedShiftsCount: 2 },
+    error: null,
+  });
+
+  renderShiftPageWithState();
+
+  const closeDayButton = await screen.findByRole('button', { name: /close day/i });
+  fireEvent.click(closeDayButton);
+
+  fireEvent.click(await screen.findByRole('button', { name: /complete day close/i }));
+
+  expect(await screen.findByTestId('day-close-result-modal')).toBeInTheDocument();
+  expect(screen.getByText('2026-07-27')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /close day/i })).toBeDisabled();
 });

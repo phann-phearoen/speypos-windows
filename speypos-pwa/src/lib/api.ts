@@ -1,5 +1,5 @@
 // API Client for SpeyPOS Local Backend
-import type { Order, PreviousDayStatus } from '@/types/pos';
+import type { DayClosePreviewResponse, DayCloseResponse, Order, PreviousDayStatus } from '@/types/pos';
 
 const API_BASE = 'http://localhost:8080/api';
 const BACKEND_URL = 'http://localhost:8080';
@@ -214,11 +214,15 @@ export const shiftApi = {
       body: JSON.stringify({ status: 'closed' }),
     }),
   // Day close preview - get summary before closing
-  getCloseDayPreview: (date?: string) => request<any>(date ? `/shift/close-day?date=${encodeURIComponent(date)}` : '/shift/close-day'),
+  getCloseDayPreview: (date?: string) =>
+    request<DayClosePreviewResponse>(date ? `/shift/close-day?date=${encodeURIComponent(date)}` : '/shift/close-day'),
   // Previous business day status + today's closed shift count
   getPreviousDayStatus: () => request<PreviousDayStatus>('/shift/day-status/previous'),
   // Close all shifts for the business day
-  closeDay: (date?: string) => request<{ message: string }>(date ? `/shift/close-day?date=${encodeURIComponent(date)}` : '/shift/close-day', { method: 'POST' }),
+  closeDay: (date?: string) =>
+    request<DayCloseResponse>(date ? `/shift/close-day?date=${encodeURIComponent(date)}` : '/shift/close-day', {
+      method: 'POST',
+    }),
 };
 
 // Orders

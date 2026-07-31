@@ -9,10 +9,10 @@ import { useTranslation } from '@/lib/i18n';
 import { Header } from '@/components/pos/Header';
 import { StoreBrand } from '@/components/StoreBrand';
 import { DayClosePreviewModal } from '@/components/pos/DayClosePreviewModal';
+import { DayCloseResultModal } from '@/components/pos/DayCloseResultModal';
 import { StaleShiftsModal } from '@/components/pos/StaleShiftsModal';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
-import type { Staff, Shift, PreviousDayStatus } from '@/types/pos';
+import type { DayCloseCompletion, Staff, Shift, PreviousDayStatus } from '@/types/pos';
 
 function isPreviousDayBlocked(status: PreviousDayStatus | null): boolean {
   if (!status?.hasPreviousDay) {
@@ -52,6 +52,9 @@ export default function ShiftPage() {
   // Day close modal state
   const [showDayCloseModal, setShowDayCloseModal] = useState(false);
   const [dayCloseTargetDate, setDayCloseTargetDate] = useState<string | null>(null);
+  const [dayCloseCompleted, setDayCloseCompleted] = useState(false);
+  const [showDayCloseResultModal, setShowDayCloseResultModal] = useState(false);
+  const [dayCloseCompletion, setDayCloseCompletion] = useState<DayCloseCompletion | null>(null);
   const [showStaleShiftsModal, setShowStaleShiftsModal] = useState(false);
   const lifecycleError =
     (location.state as { lifecycleError?: string; invalidatedAt?: number } | null)?.lifecycleError || null;
@@ -61,12 +64,11 @@ export default function ShiftPage() {
     setShowDayCloseModal(true);
   };
 
-  const refreshPreviousDayStatus = () => {
-    shiftApi.getPreviousDayStatus().then((result) => {
-      if (!result.error && result.data) {
-        setPreviousDayStatus(result.data);
-      }
-    });
+  const refreshPreviousDayStatus = async () => {
+    const result = await shiftApi.getPreviousDayStatus();
+    if (!result.error && result.data) {
+      setPreviousDayStatus(result.data);
+    }
   };
 
   // Check for active shift and pending actions on mount
@@ -177,14 +179,17 @@ export default function ShiftPage() {
     navigate('/admin/order-history');
   };
 
-  const handleDayCloseSuccess = () => {
+  const handleDayCloseComplete = (completion: DayCloseCompletion) => {
     setShowDayCloseModal(false);
+    setDayCloseCompletion(completion);
+    setDayCloseCompleted(true);
+    setShowDayCloseResultModal(true);
     // Re-fetch previous day status so the block and animation clear
     refreshPreviousDayStatus();
-    toast({
-      title: t('shift.dayClose.success'),
-      description: t('shift.dayClose.successDesc'),
-    });
+  };
+
+  const handleDayCloseResultClose = () => {
+    setShowDayCloseResultModal(false);
   };
 
   const handleStaleShiftsUpdated = () => {
@@ -197,6 +202,7 @@ export default function ShiftPage() {
   const closeDayAttention = closedShiftCount >= 2;
   const closeDayAnimate = closeDayAttention && animateCloseDay;
   const isShiftActionsReady = !checkingActiveShift && !loading && activeStaff.length > 0;
+  const closeDayButtonDisabled = dayCloseCompleted;
 
   useEffect(() => {
     const justClosedShiftAt = (location.state as { justClosedShiftAt?: number } | null)?.justClosedShiftAt;
@@ -444,11 +450,13 @@ export default function ShiftPage() {
                   <div className="mt-6 pt-6 border-t border-border">
                     <Button
                       variant={closeDayAttention ? 'default' : 'outline'}
+                      disabled={closeDayButtonDisabled}
                       className={[
-                        'w-full gap-2 transition-all duration-300',
+                        'w-full gap-2 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-55',
                         closeDayAttention
                           ? 'bg-amber-500 hover:bg-amber-600 text-white border-transparent shadow-lg ring-2 ring-amber-300/70'
                           : '',
+                        closeDayButtonDisabled ? 'bg-muted text-muted-foreground border-border shadow-none ring-0 hover:bg-muted' : '',
                         closeDayAnimate ? 'animate-pulse scale-[1.02]' : '',
                       ].join(' ')}
                       onClick={() => openDayCloseModal()}
@@ -480,8 +488,14 @@ export default function ShiftPage() {
           <DayClosePreviewModal
             open={showDayCloseModal}
             onClose={() => setShowDayCloseModal(false)}
-            onSuccess={handleDayCloseSuccess}
+            onComplete={handleDayCloseComplete}
             targetDate={dayCloseTargetDate ?? undefined}
+          />
+
+          <DayCloseResultModal
+            open={showDayCloseResultModal}
+            result={dayCloseCompletion}
+            onClose={handleDayCloseResultClose}
           />
 
           <StaleShiftsModal

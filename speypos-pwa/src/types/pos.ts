@@ -195,6 +195,48 @@ export interface DayClosePreviewResponse {
   shifts: DayCloseShiftSummary[];
 }
 
+export interface DayCloseShiftReport {
+  shift: Shift;
+  totalOrders: number;
+  totalRevenue: number;
+  totalItems: number;
+  revenueByPaymentType: Record<string, number>;
+  voidedOrders: number;
+  voidedAmount: number;
+  voidedItems: number;
+  netRevenue: number;
+}
+
+export interface DayCloseCombinedSummary {
+  totalOrders: number;
+  totalRevenue: number;
+  totalItems: number;
+  revenueByPaymentType: Record<string, number>;
+  grandTotalItems: number;
+  voidedOrders: number;
+  voidedAmount: number;
+  voidedItems: number;
+  netRevenue: number;
+}
+
+export interface DayCloseResponse {
+  businessDate: string;
+  shiftSummaries: DayCloseShiftReport[];
+  combinedSummary: DayCloseCombinedSummary;
+  business_day_id?: string | null;
+  business_day_status?: BusinessDayStatus | null;
+}
+
+export type DayCloseCompletionStatus = 'closed' | 'already-closed';
+
+export interface DayCloseCompletion {
+  status: DayCloseCompletionStatus;
+  businessDate: string;
+  business_day_status?: BusinessDayStatus | null;
+  response?: DayCloseResponse | null;
+  message?: string;
+}
+
 export interface DayCloseShiftSummary {
   id: string;
   status: string;

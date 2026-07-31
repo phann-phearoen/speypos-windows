@@ -13,13 +13,13 @@ import { shiftApi } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { useCurrency } from '@/lib/currency';
 import { useDateTime, formatDateString } from '@/lib/datetime';
-import type { DayClosePreviewResponse, Order } from '@/types/pos';
+import type { DayCloseCompletion, DayClosePreviewResponse, Order } from '@/types/pos';
 import { Badge } from '@/components/ui/badge';
 
 interface DayClosePreviewModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onComplete: (completion: DayCloseCompletion) => void;
   targetDate?: string;
 }
 
@@ -28,7 +28,7 @@ const ORDERS_PER_PAGE = 10;
 export function DayClosePreviewModal({
   open,
   onClose,
-  onSuccess,
+  onComplete,
   targetDate,
 }: DayClosePreviewModalProps) {
   const { t } = useTranslation();
@@ -46,7 +46,7 @@ export function DayClosePreviewModal({
     if (open) {
       loadPreview();
     }
-  }, [open]);
+  }, [open, targetDate]);
 
   const loadPreview = async () => {
     setLoading(true);
@@ -74,7 +74,12 @@ export function DayClosePreviewModal({
     const result = await shiftApi.closeDay(targetDate);
     if (result.errorCode === 'DAY_ALREADY_CLOSED') {
       setClosing(false);
-      onSuccess();
+      onComplete({
+        status: 'already-closed',
+        businessDate: preview?.businessDate || targetDate || '',
+        business_day_status: 'CLOSED',
+        message: result.error || t('shift.dayClose.alreadyClosed'),
+      });
       return;
     }
 
@@ -83,7 +88,12 @@ export function DayClosePreviewModal({
       setClosing(false);
     } else {
       setClosing(false);
-      onSuccess();
+      onComplete({
+        status: 'closed',
+        businessDate: result.data?.businessDate || preview?.businessDate || targetDate || '',
+        business_day_status: result.data?.business_day_status ?? preview?.business_day_status ?? null,
+        response: result.data,
+      });
     }
   };
 
@@ -107,6 +117,7 @@ export function DayClosePreviewModal({
   // Calculate summary stats - exclude voided orders from revenue
   const shifts = preview?.shifts || [];
   const businessDayAlreadyClosed = preview?.business_day_status === 'CLOSED';
+  const businessDateLabel = preview?.businessDate ? formatDateString(preview.businessDate) : null;
   const totalShifts = shifts.length;
   const totalOrders = shifts.reduce((sum, s) => sum + (s.orders?.length || 0), 0);
   const nonVoidedShiftOrders = (s: typeof shifts[0]) => (s.orders || []).filter(o => o.status !== 'voided');
@@ -124,6 +135,11 @@ export function DayClosePreviewModal({
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('shift.dayClose.title')}</DialogTitle>
+          {businessDateLabel && (
+            <p className="text-sm text-muted-foreground">
+              {t('shift.dayClose.businessDate')}: <span className="font-medium text-foreground">{businessDateLabel}</span>
+            </p>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">

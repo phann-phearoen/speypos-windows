@@ -123,6 +123,15 @@ const translations: Record<string, TranslationDictionary> = {
     'shift.dayClose.alreadyClosed': 'This business day is already closed.',
     'shift.dayClose.success': 'Day Closed Successfully',
     'shift.dayClose.successDesc': 'All shifts have been closed and reports sent',
+    'shift.dayClose.result.title': 'Day Close Result',
+    'shift.dayClose.result.closedTitle': 'Day Closed Successfully',
+    'shift.dayClose.result.closedDesc': 'All shifts have been closed and reports sent.',
+    'shift.dayClose.result.alreadyClosedTitle': 'Business Day Already Closed',
+    'shift.dayClose.result.alreadyClosedDesc': 'This business day was already closed. No further action was needed.',
+    'shift.dayClose.result.businessDate': 'Business Date',
+    'shift.dayClose.result.shifts': 'Shifts',
+    'shift.dayClose.result.netRevenue': 'Net Revenue',
+    'shift.dayClose.result.dismiss': 'Done',
     
     // Admin Layout
     'admin.dashboard': 'Admin Dashboard',

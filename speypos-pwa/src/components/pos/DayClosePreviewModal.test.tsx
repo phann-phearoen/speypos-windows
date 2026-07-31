@@ -98,7 +98,7 @@ beforeEach(() => {
 });
 
 test('treats DAY_ALREADY_CLOSED as terminal success and calls onSuccess', async () => {
-  const onSuccess = vi.fn();
+  const onComplete = vi.fn();
   const onClose = vi.fn();
 
   mocks.mockCloseDay.mockResolvedValue({
@@ -108,18 +108,23 @@ test('treats DAY_ALREADY_CLOSED as terminal success and calls onSuccess', async 
   });
 
   render(
-    <DayClosePreviewModal open={true} onClose={onClose} onSuccess={onSuccess} targetDate="2026-07-27" />
+    <DayClosePreviewModal open={true} onClose={onClose} onComplete={onComplete} targetDate="2026-07-27" />
   );
 
   fireEvent.click(await screen.findByRole('button', { name: /confirm close day/i }));
 
   await waitFor(() => {
-    expect(onSuccess).toHaveBeenCalled();
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'already-closed',
+        businessDate: '2026-07-27',
+      })
+    );
   });
 });
 
 test('keeps DAY_NOT_READY visible as a blocking error and does not call onSuccess', async () => {
-  const onSuccess = vi.fn();
+  const onComplete = vi.fn();
   const onClose = vi.fn();
 
   mocks.mockCloseDay.mockResolvedValue({
@@ -129,7 +134,7 @@ test('keeps DAY_NOT_READY visible as a blocking error and does not call onSucces
   });
 
   render(
-    <DayClosePreviewModal open={true} onClose={onClose} onSuccess={onSuccess} targetDate="2026-07-27" />
+    <DayClosePreviewModal open={true} onClose={onClose} onComplete={onComplete} targetDate="2026-07-27" />
   );
 
   fireEvent.click(await screen.findByRole('button', { name: /confirm close day/i }));
@@ -138,5 +143,18 @@ test('keeps DAY_NOT_READY visible as a blocking error and does not call onSucces
     expect(screen.getByText('Business day 2026-07-27 cannot be closed until all shifts are closed.')).toBeInTheDocument();
   });
 
-  expect(onSuccess).not.toHaveBeenCalled();
+  expect(onComplete).not.toHaveBeenCalled();
+});
+
+test('shows the actual business date in the preview modal', async () => {
+  const onComplete = vi.fn();
+  const onClose = vi.fn();
+
+  render(
+    <DayClosePreviewModal open={true} onClose={onClose} onComplete={onComplete} targetDate="2026-07-27" />
+  );
+
+  await waitFor(() => {
+    expect(screen.getAllByText('2026-07-27').length).toBeGreaterThan(0);
+  }, { timeout: 3000 });
 });

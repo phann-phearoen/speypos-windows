@@ -15,3 +15,13 @@ source files when (a) modifying/debugging specific code, (b) the graph lacks the
 (c) the graph is missing or stale.
 
 Type `/graphify` in Copilot Chat to build or update the graph.
+
+## Runtime Notes
+
+The backend workspace (`speypos-local`) requires Node.js 18.x to run and to execute the SQLite-backed tests. If you see a native module mismatch from `better-sqlite3`, switch the shell to Node 18 before starting the backend or running tests.
+
+Recommended command:
+
+```sh
+nvm use 18
+```

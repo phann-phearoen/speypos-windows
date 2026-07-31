@@ -31,6 +31,8 @@ SpeyPOS is a local, offline-first POS (Point of Sale) backend service designed f
     nvm use
     ```
 
+    The backend depends on `better-sqlite3`, so running it under Node 18 avoids native module version mismatches. If you hit `ERR_DLOPEN_FAILED`, switch the shell to Node 18 and reinstall dependencies if needed.
+
 2.  **Install Dependencies**:
 
     ```sh
