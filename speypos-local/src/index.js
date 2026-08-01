@@ -1,7 +1,21 @@
 // --- Service Startup Diagnostic Logging ---
+import cryptoModule from "node:crypto";
+import fs from "fs";
+
+if (typeof globalThis.crypto === "undefined") {
+  globalThis.crypto = cryptoModule.webcrypto ?? {
+    getRandomValues(buffer) {
+      return cryptoModule.getRandomValues(buffer);
+    },
+    randomUUID() {
+      return cryptoModule.randomUUID();
+    },
+    subtle: cryptoModule.webcrypto?.subtle,
+  };
+}
+
 import { initialize, shutdown } from "./system/lifecycle.js";
 import { logger } from "./utils/logger.js";
-import fs from "fs";
 
 try {
   fs.appendFileSync(
