@@ -1,0 +1,49 @@
+{
+  "name": "speypos",
+  "version": "1.0.0",
+  "description": "Offline-first POS backend for coffee shops.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:business-day-step0": "node --test src/tests/business-day-step0-baseline.test.js",
+    "test:business-day-step2": "node --test src/tests/business-day-step2-backfill.test.js",
+    "test:business-day-step5": "node --test src/tests/business-day-step5-controller.test.js",
+    "test:business-day-step7": "node --test src/tests/business-day-step7-outbox.test.js",
+    "test:business-day-repo": "node --test src/tests/business-day.repo.test.js",
+    "test:business-day-service": "node --test src/tests/business-day.service.test.js",
+    "validate:business-day-step2": "node scripts/validate-business-day-backfill.js",
+    "test:shift-day": "node --test src/tests/shift-day-status.test.js",
+    "test:outbox": "node --test src/tests/outbox.repo.test.js",
+    "test:outbox-dispatchers": "node --test src/tests/outbox-dispatchers.test.js",
+    "test:payment-outbox": "node --test src/tests/order-payment-outbox.test.js",
+    "dev": "nodemon src/index.js",
+    "db:dump": "node data/seed-scripts/dump.js",
+    "db:seed": "node data/seed-scripts/seed.js",
+    "test:receipt-canvas": "node scripts/test-canvas-receipt.js",
+    "test:receipt-canvas:void": "node scripts/test-canvas-receipt.js --variant=VOID",
+    "test:receipt-canvas:km": "node scripts/test-canvas-receipt.js --lang=km"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.58",
+    "better-sqlite3": "^11.1.2",
+    "child_process": "^1.0.2",
+    "cors": "^2.8.5",
+    "date-fns-tz": "^3.2.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^2.0.2",
+    "node-printer": "^1.0.4",
+    "node-thermal-printer": "^4.1.2",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prettier": "^3.3.3"
+  }
+}

@@ -1,5 +1,7 @@
 /speypos-local/\\\\localhost\\XP80
 node_modules
 package-lock.json
-package.json
+/package.json
+!/speypos-local/package.json
+!/speypos-pwa/package.json
 .DS_Store
