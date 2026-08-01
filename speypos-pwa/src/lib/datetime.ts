@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 
 // Default timezone for the application
@@ -168,27 +169,30 @@ export function useDateTime() {
   const timezone = getTimezone();
   const language = getLanguage();
 
-  return {
-    // Core formatters
-    formatDate: (timestamp: number | Date) => formatDate(timestamp, timezone),
-    formatTime: (timestamp: number | Date, includeSeconds: boolean = false) =>
-      formatTime(timestamp, timezone, includeSeconds),
-    formatDateTime: (timestamp: number | Date) => formatDateTime(timestamp, timezone),
+  return useMemo(
+    () => ({
+      // Core formatters
+      formatDate: (timestamp: number | Date) => formatDate(timestamp, timezone),
+      formatTime: (timestamp: number | Date, includeSeconds: boolean = false) =>
+        formatTime(timestamp, timezone, includeSeconds),
+      formatDateTime: (timestamp: number | Date) => formatDateTime(timestamp, timezone),
 
-    // Specialized formatters
-    formatDateString: formatDateString,
-    formatShortDate: (timestamp: number | Date) => formatShortDate(timestamp, timezone, language),
-    formatLongDate: (timestamp: number | Date, short: boolean = false) => 
-      formatLongDate(timestamp, timezone, short),
-    formatTimeRange: (start: number, end: number | null, ongoingLabel: string = 'Ongoing') =>
-      formatTimeRange(start, end, timezone, ongoingLabel),
+      // Specialized formatters
+      formatDateString: formatDateString,
+      formatShortDate: (timestamp: number | Date) => formatShortDate(timestamp, timezone, language),
+      formatLongDate: (timestamp: number | Date, short: boolean = false) =>
+        formatLongDate(timestamp, timezone, short),
+      formatTimeRange: (start: number, end: number | null, ongoingLabel: string = 'Ongoing') =>
+        formatTimeRange(start, end, timezone, ongoingLabel),
 
-    // Utilities
-    getTodayDateString: () => getTodayDateString(timezone),
-    getDateString: (date: Date) => getDateString(date, timezone),
+      // Utilities
+      getTodayDateString: () => getTodayDateString(timezone),
+      getDateString: (date: Date) => getDateString(date, timezone),
 
-    // Metadata
-    timezone,
-    language,
-  };
+      // Metadata
+      timezone,
+      language,
+    }),
+    [timezone, language]
+  );
 }
