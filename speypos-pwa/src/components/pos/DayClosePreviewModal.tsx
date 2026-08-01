@@ -136,11 +136,13 @@ export function DayClosePreviewModal({
         <DialogHeader>
           <DialogTitle>{t('shift.dayClose.title')}</DialogTitle>
           {/* Business Date */}
-          <div className="flex items-center gap-2 mb-3 text-sm">
-            <CalendarDays className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{t('shift.dayClose.businessDate')}:</span>
-            <span className="font-medium">{formatDateString(preview.businessDate)}</span>
-          </div>
+          {businessDateLabel && (
+            <div className="flex items-center gap-2 mb-3 text-sm">
+              <CalendarDays className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{t('shift.dayClose.businessDate')}:</span>
+              <span className="font-medium">{businessDateLabel}</span>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col">
