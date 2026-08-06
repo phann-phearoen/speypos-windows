@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Check, Plus, Minus, Loader2, X } from 'lucide-react';
-import type { MenuItem, Customization, CustomizationGroup, OrderItemTopping, ToppingGroup, ToppingOption } from '@/types/pos';
+import type { MenuItem, Customization, CustomizationGroup, OrderItemTopping, ToppingGroup, ToppingOption, CupSize } from '@/types/pos';
 import { useCurrency } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
 import { customizationGroupApi, customizationOptionApi, toppingGroupApi, toppingOptionApi } from '@/lib/api';
@@ -10,6 +10,7 @@ interface CustomizationPanelProps {
   item: MenuItem;
   linkedGroupIds: string[];
   linkedToppingGroupIds: string[];
+  linkedCupSizes?: CupSize[];
   onConfirm: (customizations: Customization[], toppings: OrderItemTopping[], quantity: number) => void;
   onAdd?: (customizations: Customization[], toppings: OrderItemTopping[], quantity: number) => void;
   onBack: () => void;
@@ -27,6 +28,7 @@ export function CustomizationPanel({
   item, 
   linkedGroupIds, 
   linkedToppingGroupIds,
+  linkedCupSizes = [],
   onConfirm,
   onAdd,
   onBack,
@@ -40,6 +42,7 @@ export function CustomizationPanel({
   const [loading, setLoading] = useState(true);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
   const [toppingQuantities, setToppingQuantities] = useState<Record<string, number>>({});
+  const [selectedCupSizeId, setSelectedCupSizeId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(initialQuantity);
 
   const { formatPrice } = useCurrency();
@@ -149,6 +152,15 @@ export function CustomizationPanel({
           });
         });
         setToppingQuantities(initialToppingQty);
+
+        if (linkedCupSizes.length > 0) {
+          const existingCupSize = initialCustomizations.find((customization) =>
+            linkedCupSizes.some((cupSize) => cupSize.id === customization.id)
+          );
+          setSelectedCupSizeId(existingCupSize?.id || null);
+        } else {
+          setSelectedCupSizeId(null);
+        }
       } catch (err) {
         console.error('Failed to load customizations:', err);
         setGroups([]);
@@ -160,7 +172,7 @@ export function CustomizationPanel({
 
     setLoading(true);
     loadData();
-  }, [linkedGroupIds, linkedToppingGroupIds, editMode, initialCustomizationsKey, initialToppingsKey]);
+  }, [linkedGroupIds, linkedToppingGroupIds, linkedCupSizes, editMode, initialCustomizationsKey, initialToppingsKey]);
 
   const handleSelect = (groupName: string, optionId: string, type: 'single' | 'multiple', required: boolean) => {
     setSelections(prev => {
@@ -211,6 +223,18 @@ export function CustomizationPanel({
 
   const buildCustomizations = (): Customization[] => {
     const customizations: Customization[] = [];
+
+    if (selectedCupSizeId) {
+      const selectedCupSize = linkedCupSizes.find((cupSize) => cupSize.id === selectedCupSizeId);
+      if (selectedCupSize) {
+        customizations.push({
+          id: selectedCupSize.id,
+          name: `${selectedCupSize.size} (${selectedCupSize.unit})`,
+          price: 0,
+          group: 'Cup Size',
+        });
+      }
+    }
     
     groups.forEach(group => {
       const selectedIds = selections[group.name] || [];
@@ -368,10 +392,32 @@ export function CustomizationPanel({
 
       {/* Scrollable customization options */}
       <div className="flex-1 pos-scroll p-6 space-y-6">
-        {groups.length === 0 && toppingGroups.length === 0 ? (
+        {groups.length === 0 && toppingGroups.length === 0 && linkedCupSizes.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">{t('menu.noOptions')}</p>
         ) : (
           <>
+            {linkedCupSizes.length > 0 && (
+              <div>
+                <h3 className="font-medium mb-3">Cup Size</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {linkedCupSizes.map((cupSize) => {
+                    const isSelected = selectedCupSizeId === cupSize.id;
+                    return (
+                      <button
+                        key={cupSize.id}
+                        type="button"
+                        className={`pos-btn p-3 justify-between rounded-xl border ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/10' : 'border-border bg-card'}`}
+                        onClick={() => setSelectedCupSizeId(cupSize.id)}
+                      >
+                        <span className="text-sm font-medium">{`${cupSize.size} (${cupSize.unit})`}</span>
+                        {isSelected ? <Check className="w-4 h-4 text-primary" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Customization Groups */}
             {groups.map(group => (
               <div key={group.id || group.name}>

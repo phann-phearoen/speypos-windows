@@ -5,6 +5,7 @@ export interface MenuCategory {
   name: string;
   image_url?: string;
   sort_order?: number;
+  cup_size_ids?: string[];
 }
 
 export interface MenuItem {
@@ -13,6 +14,15 @@ export interface MenuItem {
   price: number;
   image_url?: string;
   category_ids?: string[];
+  cup_size_ids?: string[];
+}
+
+export interface CupSize {
+  id: string;
+  size: string;
+  unit: string;
+  created_at?: number;
+  updated_at?: number;
 }
 
 // Legacy customization type (kept for order items)
@@ -153,11 +163,23 @@ export interface MenuItemCategoryMap {
   menu_category_id: string;
 }
 
+export interface MenuItemCupSizeMap {
+  id: string;
+  menu_item_id: string;
+  cup_size_id: string;
+}
+
 // Menu category to customization group mapping
 export interface MenuCategoryCustomizationGroup {
   id: string;
   menu_category_id: string;
   customization_group_id: string;
+}
+
+export interface MenuCategoryCupSizeMap {
+  id: string;
+  menu_category_id: string;
+  cup_size_id: string;
 }
 
 export interface Shift {

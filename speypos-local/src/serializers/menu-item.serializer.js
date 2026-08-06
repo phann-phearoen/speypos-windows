@@ -1,4 +1,5 @@
 import { getMappingsByItemIds } from '../storage/repositories/menu-item-category-map.repo.js';
+import { getMappingsByItemIds as getCupSizeMappingsByItemIds } from '../storage/repositories/menu-item-cup-size-map.repo.js';
 
 /**
  * Serializes a list of menu items to include their category IDs.
@@ -13,6 +14,7 @@ export function serializeManyMenuItems(menuItems) {
 
   const itemIds = menuItems.map(item => item.id);
   const mappings = getMappingsByItemIds(itemIds);
+  const cupSizeMappings = getCupSizeMappingsByItemIds(itemIds);
 
   // Create a map for efficient lookup: { menuItemId: [categoryId1, categoryId2] }
   const categoryMap = {};
@@ -23,10 +25,19 @@ export function serializeManyMenuItems(menuItems) {
     categoryMap[mapping.menu_item_id].push(mapping.menu_category_id);
   }
 
+  const cupSizeMap = {};
+  for (const mapping of cupSizeMappings) {
+    if (!cupSizeMap[mapping.menu_item_id]) {
+      cupSizeMap[mapping.menu_item_id] = [];
+    }
+    cupSizeMap[mapping.menu_item_id].push(mapping.cup_size_id);
+  }
+
   // Attach the category_ids to each menu item
   return menuItems.map(item => ({
     ...item,
     category_ids: categoryMap[item.id] || [],
+    cup_size_ids: cupSizeMap[item.id] || [],
   }));
 }
 

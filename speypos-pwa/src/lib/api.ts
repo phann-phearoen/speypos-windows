@@ -177,6 +177,52 @@ export const categoryMapApi = {
     adminRequest<any>(`/menu-item-category-map/${id}`, { method: 'DELETE' }),
 };
 
+// Cup Sizes
+export const cupSizeApi = {
+  getAll: () => request<any[]>('/cup-size'),
+  getById: (id: string) => request<any>(`/cup-size/${id}`),
+  create: (data: { size: string; unit: string }) =>
+    adminRequest<any>('/cup-size', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<{ size: string; unit: string }>) =>
+    adminRequest<any>(`/cup-size/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    adminRequest<any>(`/cup-size/${id}`, { method: 'DELETE' }),
+};
+
+// Menu Item ↔ Cup Size Mappings
+export const menuItemCupSizeMapApi = {
+  getAll: () => request<any[]>('/menu-item-cup-size-map'),
+  getByMenuItem: (menuItemId: string) =>
+    request<any[]>(`/menu-item-cup-size-map?menu_item_id=${menuItemId}`),
+  create: (data: { menu_item_id: string; cup_size_id: string }) =>
+    adminRequest<any>('/menu-item-cup-size-map', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    adminRequest<any>(`/menu-item-cup-size-map/${id}`, { method: 'DELETE' }),
+};
+
+// Menu Category ↔ Cup Size Mappings
+export const menuCategoryCupSizeMapApi = {
+  getAll: () => request<any[]>('/menu-category-cup-size-map'),
+  getByCategory: (categoryId: string) =>
+    request<any[]>(`/menu-category-cup-size-map?menu_category_id=${categoryId}`),
+  create: (data: { menu_category_id: string; cup_size_id: string }) =>
+    adminRequest<any>('/menu-category-cup-size-map', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    adminRequest<any>(`/menu-category-cup-size-map/${id}`, { method: 'DELETE' }),
+};
+
 // Staff
 export const staffApi = {
   getStaff: () => request<any[]>('/staff'),

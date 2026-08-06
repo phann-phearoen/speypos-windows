@@ -18,12 +18,39 @@ CREATE TABLE MenuCategory (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE CupSize (
+    id TEXT PRIMARY KEY,
+    size TEXT NOT NULL,
+    unit TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER,
+    UNIQUE (size, unit)
+);
+
 CREATE TABLE MenuItemCategoryMap (
     id TEXT PRIMARY KEY,
     menu_item_id TEXT NOT NULL,
     menu_category_id TEXT NOT NULL,
     FOREIGN KEY (menu_item_id) REFERENCES MenuItem(id) ON DELETE CASCADE,
     FOREIGN KEY (menu_category_id) REFERENCES MenuCategory(id) ON DELETE CASCADE
+);
+
+CREATE TABLE MenuItemCupSizeMap (
+    id TEXT PRIMARY KEY,
+    menu_item_id TEXT NOT NULL,
+    cup_size_id TEXT NOT NULL,
+    FOREIGN KEY (menu_item_id) REFERENCES MenuItem(id) ON DELETE CASCADE,
+    FOREIGN KEY (cup_size_id) REFERENCES CupSize(id) ON DELETE CASCADE,
+    UNIQUE (menu_item_id, cup_size_id)
+);
+
+CREATE TABLE MenuCategoryCupSizeMap (
+    id TEXT PRIMARY KEY,
+    menu_category_id TEXT NOT NULL,
+    cup_size_id TEXT NOT NULL,
+    FOREIGN KEY (menu_category_id) REFERENCES MenuCategory(id) ON DELETE CASCADE,
+    FOREIGN KEY (cup_size_id) REFERENCES CupSize(id) ON DELETE CASCADE,
+    UNIQUE (menu_category_id, cup_size_id)
 );
 
 CREATE TABLE Staff (
@@ -217,6 +244,12 @@ CREATE INDEX idx_menu_item_topping_group_group ON MenuItemToppingGroup(topping_g
 
 CREATE INDEX idx_menu_category_topping_group_category ON MenuCategoryToppingGroup(menu_category_id);
 CREATE INDEX idx_menu_category_topping_group_group ON MenuCategoryToppingGroup(topping_group_id);
+
+CREATE INDEX idx_menu_item_cup_size_map_item ON MenuItemCupSizeMap(menu_item_id);
+CREATE INDEX idx_menu_item_cup_size_map_size ON MenuItemCupSizeMap(cup_size_id);
+
+CREATE INDEX idx_menu_category_cup_size_map_category ON MenuCategoryCupSizeMap(menu_category_id);
+CREATE INDEX idx_menu_category_cup_size_map_size ON MenuCategoryCupSizeMap(cup_size_id);
 
 CREATE INDEX IF NOT EXISTS idx_order_shift_cloud_sync ON "Order" (shift_id, cloud_sync_at);
 

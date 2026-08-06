@@ -13,6 +13,7 @@ import { useDisplaySession } from '@/hooks/useDisplaySession';
 import { getCategorySurfaceColors } from '@/lib/categoryColors';
 import { useShiftCloseFlow } from '@/hooks/useShiftCloseFlow';
 import { useTranslation } from '@/lib/i18n';
+import { resolveEffectiveCupSizesForItem } from '@/lib/cupSizeResolution';
 import type { MenuItem, OrderItem, Customization, OrderItemTopping } from '@/types/pos';
 import { findMatchingItem, generateSignature } from '@/lib/orderGrouping';
 import type { ActiveOrderItemHighlight } from '@/components/pos/GroupedOrderPanel';
@@ -37,7 +38,19 @@ export default function OrderPage() {
   const incomingState = location.state as LocationState | null;
 
   const { isConnected } = useConnectionStatus();
-  const { categories, menuItems, customizationMappings, categoryCustomizationMappings, toppingMappings, categoryToppingMappings, isLoading: menuLoading, refresh: refreshMenu } = useMenu();
+  const {
+    categories,
+    menuItems,
+    customizationMappings,
+    categoryCustomizationMappings,
+    toppingMappings,
+    categoryToppingMappings,
+    cupSizes,
+    itemCupSizeMappings,
+    categoryCupSizeMappings,
+    isLoading: menuLoading,
+    refresh: refreshMenu,
+  } = useMenu();
   const { currentShift, currentStaff, isLoading: shiftLoading } = useShift();
   const { updateToOrdering, updateToIdle } = useDisplaySession();
   const { t } = useTranslation();
@@ -76,6 +89,7 @@ export default function OrderPage() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedItemGroupIds, setSelectedItemGroupIds] = useState<string[]>([]);
   const [selectedItemToppingGroupIds, setSelectedItemToppingGroupIds] = useState<string[]>([]);
+  const [selectedItemCupSizes, setSelectedItemCupSizes] = useState<{ id: string; size: string; unit: string }[]>([]);
   const [editingOrderItem, setEditingOrderItem] = useState<OrderItem | null>(null);
   const [viewState, setViewState] = useState<'menu' | 'customization'>('menu');
   const [activeOrderItem, setActiveOrderItem] = useState<ActiveOrderItemHighlight | null>(null);
@@ -277,15 +291,33 @@ export default function OrderPage() {
     // Merge + dedupe topping groups
     const linkedToppingGroupIds = Array.from(new Set([...itemToppingGroupIds, ...categoryToppingGroupIdsFromCategory]));
 
+    // Cup size override: if item-level mappings exist, they replace category-level defaults.
+    const resolvedCupSizes = resolveEffectiveCupSizesForItem({
+      menuItemId: item.id,
+      categoryIds,
+      cupSizes,
+      itemCupSizeMappings,
+      categoryCupSizeMappings,
+    });
+
     if (linkedGroupIds.length > 0 || linkedToppingGroupIds.length > 0) {
       // Has customizations or toppings - open panel
       setSelectedItem(item);
       setSelectedItemGroupIds(linkedGroupIds);
       setSelectedItemToppingGroupIds(linkedToppingGroupIds);
+      setSelectedItemCupSizes(resolvedCupSizes);
       setViewState('customization');
     } else {
-      // No customizations or toppings - add directly to order
-      addItem(item, [], [], 1);
+      if (resolvedCupSizes.length > 0) {
+        setSelectedItem(item);
+        setSelectedItemGroupIds(linkedGroupIds);
+        setSelectedItemToppingGroupIds(linkedToppingGroupIds);
+        setSelectedItemCupSizes(resolvedCupSizes);
+        setViewState('customization');
+      } else {
+        // No customizations, toppings, or cup sizes - add directly to order
+        addItem(item, [], [], 1);
+      }
     }
   };
 
@@ -316,6 +348,7 @@ export default function OrderPage() {
     setSelectedItem(null);
     setSelectedItemGroupIds([]);
     setSelectedItemToppingGroupIds([]);
+    setSelectedItemCupSizes([]);
     setEditingOrderItem(null);
     setViewState('menu');
   };
@@ -350,12 +383,21 @@ export default function OrderPage() {
 
     const linkedToppingGroupIds = Array.from(new Set([...itemToppingGroupIds, ...categoryToppingGroupIdsFromCategory]));
 
+    const resolvedCupSizes = resolveEffectiveCupSizesForItem({
+      menuItemId: menuItem.id,
+      categoryIds,
+      cupSizes,
+      itemCupSizeMappings,
+      categoryCupSizeMappings,
+    });
+
     setSelectedItem(menuItem);
     setSelectedItemGroupIds(linkedGroupIds);
     setSelectedItemToppingGroupIds(linkedToppingGroupIds);
+    setSelectedItemCupSizes(resolvedCupSizes);
     setEditingOrderItem(orderItem);
     setViewState('customization');
-  }, [menuItems, customizationMappings, categoryCustomizationMappings, toppingMappings, categoryToppingMappings]);
+  }, [menuItems, customizationMappings, categoryCustomizationMappings, toppingMappings, categoryToppingMappings, cupSizes, itemCupSizeMappings, categoryCupSizeMappings]);
 
   // Handle duplicate item - add a copy with same customizations and toppings
   const handleDuplicateItem = useCallback((orderItem: OrderItem) => {
@@ -413,6 +455,7 @@ export default function OrderPage() {
             item={selectedItem!}
             linkedGroupIds={selectedItemGroupIds}
             linkedToppingGroupIds={selectedItemToppingGroupIds}
+            linkedCupSizes={selectedItemCupSizes}
             onConfirm={handleCustomizationConfirm}
             onAdd={handleAddItem}
             onBack={handleBack}

@@ -2,6 +2,7 @@ import * as customGroupRepo from '../storage/repositories/customization-option-g
 import * as categoryCustomGroupRepo from '../storage/repositories/menu-category-customization-group.repo.js';
 import * as toppingGroupRepo from '../storage/repositories/topping-group.repo.js';
 import * as categoryToppingGroupRepo from '../storage/repositories/menu-category-topping-group.repo.js';
+import * as categoryCupSizeMapRepo from '../storage/repositories/menu-category-cup-size-map.repo.js';
 
 /**
  * Serializes a single menu category, embedding its associated customization groups.
@@ -27,6 +28,9 @@ export function serializeCategory(category) {
   const toppingMaps = categoryToppingGroupRepo.getMaps({ menu_category_id: category.id });
   const toppingGroupIds = toppingMaps.map(map => map.topping_group_id);
 
+  const cupSizeMaps = categoryCupSizeMapRepo.getMaps({ menu_category_id: category.id });
+  const cupSizeIds = cupSizeMaps.map(map => map.cup_size_id);
+
   let topping_groups = [];
   if (toppingGroupIds.length > 0) {
     topping_groups = toppingGroupIds.map(id => toppingGroupRepo.getById(id)).filter(Boolean);
@@ -36,6 +40,7 @@ export function serializeCategory(category) {
     ...category,
     customization_groups,
     topping_groups,
+    cup_size_ids: cupSizeIds,
   };
 }
 

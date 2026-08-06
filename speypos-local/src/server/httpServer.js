@@ -27,6 +27,9 @@ import setupRouter from '../routes/setup.routes.js';
 import storeRouter from '../routes/store.routes.js';
 import menuCategoryCustomizationGroupRouter from '../routes/menu-category-customization-group.routes.js';
 import menuCategoryToppingGroupRouter from '../routes/menu-category-topping-group.routes.js';
+import cupSizeRouter from '../routes/cup-size.routes.js';
+import menuItemCupSizeMapRouter from '../routes/menu-item-cup-size-map.routes.js';
+import menuCategoryCupSizeMapRouter from '../routes/menu-category-cup-size-map.routes.js';
 import syncRouter from '../routes/sync.routes.js';
 
 const app = express();
@@ -87,6 +90,9 @@ export function startServer({ mode = 'NORMAL' }) {
       app.use('/api', storeRouter);
       app.use('/api', menuCategoryCustomizationGroupRouter);
       app.use('/api', menuCategoryToppingGroupRouter);
+      app.use('/api', cupSizeRouter);
+      app.use('/api', menuItemCupSizeMapRouter);
+      app.use('/api', menuCategoryCupSizeMapRouter);
     }
 
     // 3. SPA Catch-all for frontend routing

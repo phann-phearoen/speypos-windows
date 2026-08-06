@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { menuApi, categoryApi, menuItemCustomizationGroupApi, menuCategoryCustomizationGroupApi, menuItemToppingGroupApi, menuCategoryToppingGroupApi } from '@/lib/api';
-import type { MenuItem, MenuCategory, MenuItemCustomizationGroup, MenuCategoryCustomizationGroup, MenuItemToppingGroup, MenuCategoryToppingGroup } from '@/types/pos';
+import { menuApi, categoryApi, menuItemCustomizationGroupApi, menuCategoryCustomizationGroupApi, menuItemToppingGroupApi, menuCategoryToppingGroupApi, cupSizeApi, menuItemCupSizeMapApi, menuCategoryCupSizeMapApi } from '@/lib/api';
+import type { MenuItem, MenuCategory, MenuItemCustomizationGroup, MenuCategoryCustomizationGroup, MenuItemToppingGroup, MenuCategoryToppingGroup, CupSize, MenuItemCupSizeMap, MenuCategoryCupSizeMap } from '@/types/pos';
 
 interface MenuContextType {
   categories: MenuCategory[];
@@ -9,6 +9,9 @@ interface MenuContextType {
   categoryCustomizationMappings: MenuCategoryCustomizationGroup[];
   toppingMappings: MenuItemToppingGroup[];
   categoryToppingMappings: MenuCategoryToppingGroup[];
+  cupSizes: CupSize[];
+  itemCupSizeMappings: MenuItemCupSizeMap[];
+  categoryCupSizeMappings: MenuCategoryCupSizeMap[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -23,6 +26,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [categoryCustomizationMappings, setCategoryCustomizationMappings] = useState<MenuCategoryCustomizationGroup[]>([]);
   const [toppingMappings, setToppingMappings] = useState<MenuItemToppingGroup[]>([]);
   const [categoryToppingMappings, setCategoryToppingMappings] = useState<MenuCategoryToppingGroup[]>([]);
+  const [cupSizes, setCupSizes] = useState<CupSize[]>([]);
+  const [itemCupSizeMappings, setItemCupSizeMappings] = useState<MenuItemCupSizeMap[]>([]);
+  const [categoryCupSizeMappings, setCategoryCupSizeMappings] = useState<MenuCategoryCupSizeMap[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,17 +36,20 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
 
-    const [catResult, itemResult, mappingResult, categoryMappingResult, toppingMappingResult, categoryToppingMappingResult] = await Promise.all([
+    const [catResult, itemResult, mappingResult, categoryMappingResult, toppingMappingResult, categoryToppingMappingResult, cupSizeResult, itemCupSizeMapResult, categoryCupSizeMapResult] = await Promise.all([
       categoryApi.getCategories(),
       menuApi.getItems(),
       menuItemCustomizationGroupApi.getAll(),
       menuCategoryCustomizationGroupApi.getAll(),
       menuItemToppingGroupApi.getAll(),
       menuCategoryToppingGroupApi.getAll(),
+      cupSizeApi.getAll(),
+      menuItemCupSizeMapApi.getAll(),
+      menuCategoryCupSizeMapApi.getAll(),
     ]);
 
-    if (catResult.error || itemResult.error || mappingResult.error || categoryMappingResult.error || toppingMappingResult.error || categoryToppingMappingResult.error) {
-      setError(catResult.error || itemResult.error || mappingResult.error || categoryMappingResult.error || toppingMappingResult.error || categoryToppingMappingResult.error);
+    if (catResult.error || itemResult.error || mappingResult.error || categoryMappingResult.error || toppingMappingResult.error || categoryToppingMappingResult.error || cupSizeResult.error || itemCupSizeMapResult.error || categoryCupSizeMapResult.error) {
+      setError(catResult.error || itemResult.error || mappingResult.error || categoryMappingResult.error || toppingMappingResult.error || categoryToppingMappingResult.error || cupSizeResult.error || itemCupSizeMapResult.error || categoryCupSizeMapResult.error);
     }
 
     // Sort categories by sort_order, then by name as fallback
@@ -57,6 +66,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setCategoryCustomizationMappings(categoryMappingResult.data || []);
     setToppingMappings(toppingMappingResult.data || []);
     setCategoryToppingMappings(categoryToppingMappingResult.data || []);
+    setCupSizes(cupSizeResult.data || []);
+    setItemCupSizeMappings(itemCupSizeMapResult.data || []);
+    setCategoryCupSizeMappings(categoryCupSizeMapResult.data || []);
     setIsLoading(false);
   }, []);
 
@@ -85,6 +97,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
         categoryCustomizationMappings,
         toppingMappings,
         categoryToppingMappings,
+        cupSizes,
+        itemCupSizeMappings,
+        categoryCupSizeMappings,
         isLoading,
         error,
         refresh: loadData,

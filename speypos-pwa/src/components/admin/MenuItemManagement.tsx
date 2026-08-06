@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { menuApi, categoryApi, categoryMapApi, customizationGroupApi, menuItemCustomizationGroupApi, toppingGroupApi, menuItemToppingGroupApi, resolveImageUrl } from '@/lib/api';
-import type { MenuItem, MenuCategory, MenuItemCategoryMap, CustomizationOptionGroup, MenuItemCustomizationGroup, ToppingGroup, MenuItemToppingGroup } from '@/types/pos';
+import { menuApi, categoryApi, categoryMapApi, customizationGroupApi, menuItemCustomizationGroupApi, toppingGroupApi, menuItemToppingGroupApi, resolveImageUrl, cupSizeApi, menuItemCupSizeMapApi } from '@/lib/api';
+import type { MenuItem, MenuCategory, MenuItemCategoryMap, CustomizationOptionGroup, MenuItemCustomizationGroup, ToppingGroup, MenuItemToppingGroup, CupSize, MenuItemCupSizeMap } from '@/types/pos';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCurrency } from '@/lib/currency';
 import { ImageUpload } from './ImageUpload';
@@ -21,6 +21,7 @@ interface MenuItemFormData {
   category_ids: string[];
   customization_group_ids: string[];
   topping_group_ids: string[];
+  cup_size_ids: string[];
 }
 
 const initialFormData: MenuItemFormData = {
@@ -30,6 +31,7 @@ const initialFormData: MenuItemFormData = {
   category_ids: [],
   customization_group_ids: [],
   topping_group_ids: [],
+  cup_size_ids: [],
 };
 
 export function MenuItemManagement() {
@@ -44,6 +46,8 @@ export function MenuItemManagement() {
   const [customizationMappings, setCustomizationMappings] = useState<MenuItemCustomizationGroup[]>([]);
   const [toppingGroups, setToppingGroups] = useState<ToppingGroup[]>([]);
   const [toppingMappings, setToppingMappings] = useState<MenuItemToppingGroup[]>([]);
+  const [cupSizes, setCupSizes] = useState<CupSize[]>([]);
+  const [itemCupSizeMappings, setItemCupSizeMappings] = useState<MenuItemCupSizeMap[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -54,10 +58,13 @@ export function MenuItemManagement() {
   const [formData, setFormData] = useState<MenuItemFormData>(initialFormData);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [newCupSizeSize, setNewCupSizeSize] = useState('');
+  const [newCupSizeUnit, setNewCupSizeUnit] = useState('');
+  const [isCreatingCupSize, setIsCreatingCupSize] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [itemsRes, categoriesRes, mappingsRes, customGroupsRes, customMappingsRes, toppingGroupsRes, toppingMappingsRes] = await Promise.all([
+    const [itemsRes, categoriesRes, mappingsRes, customGroupsRes, customMappingsRes, toppingGroupsRes, toppingMappingsRes, cupSizesRes, itemCupSizeMappingsRes] = await Promise.all([
       menuApi.getItems(),
       categoryApi.getCategories(),
       categoryMapApi.getMappings(),
@@ -65,6 +72,8 @@ export function MenuItemManagement() {
       menuItemCustomizationGroupApi.getAll(),
       toppingGroupApi.getAll(),
       menuItemToppingGroupApi.getAll(),
+      cupSizeApi.getAll(),
+      menuItemCupSizeMapApi.getAll(),
     ]);
     
     if (itemsRes.data) setItems(itemsRes.data);
@@ -86,6 +95,15 @@ export function MenuItemManagement() {
       setToppingGroups(sorted);
     }
     if (toppingMappingsRes.data) setToppingMappings(toppingMappingsRes.data);
+    if (cupSizesRes.data) {
+      const sortedCupSizes = [...cupSizesRes.data].sort((a, b) => {
+        const bySize = a.size.localeCompare(b.size);
+        if (bySize !== 0) return bySize;
+        return a.unit.localeCompare(b.unit);
+      });
+      setCupSizes(sortedCupSizes);
+    }
+    if (itemCupSizeMappingsRes.data) setItemCupSizeMappings(itemCupSizeMappingsRes.data);
     setIsLoading(false);
   };
 
@@ -115,6 +133,11 @@ export function MenuItemManagement() {
     return toppingGroups.filter(g => itemMappings.some(m => m.topping_group_id === g.id));
   };
 
+  const getItemCupSizes = (itemId: string) => {
+    const itemMappings = itemCupSizeMappings.filter(m => m.menu_item_id === itemId);
+    return cupSizes.filter((size) => itemMappings.some((mapping) => mapping.cup_size_id === size.id));
+  };
+
   // Filter items by selected category
   const filteredItems = useMemo(() => {
     if (!selectedCategory) {
@@ -142,6 +165,7 @@ export function MenuItemManagement() {
     const itemCategoryMappings = mappings.filter(m => m.menu_item_id === item.id);
     const itemCustomMappings = customizationMappings.filter(m => m.menu_item_id === item.id);
     const itemToppingMappings = toppingMappings.filter(m => m.menu_item_id === item.id);
+    const itemSizeMappings = itemCupSizeMappings.filter(m => m.menu_item_id === item.id);
     setFormData({
       name: item.name,
       price: toDisplayValue(item.price),
@@ -149,6 +173,7 @@ export function MenuItemManagement() {
       category_ids: itemCategoryMappings.map(m => m.menu_category_id),
       customization_group_ids: itemCustomMappings.map(m => m.customization_group_id),
       topping_group_ids: itemToppingMappings.map(m => m.topping_group_id),
+      cup_size_ids: itemSizeMappings.map(m => m.cup_size_id),
     });
     setIsFormOpen(true);
   };
@@ -183,6 +208,43 @@ export function MenuItemManagement() {
         ? prev.topping_group_ids.filter(id => id !== groupId)
         : [...prev.topping_group_ids, groupId],
     }));
+  };
+
+  const handleCupSizeToggle = (cupSizeId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      cup_size_ids: prev.cup_size_ids.includes(cupSizeId)
+        ? prev.cup_size_ids.filter((id) => id !== cupSizeId)
+        : [...prev.cup_size_ids, cupSizeId],
+    }));
+  };
+
+  const handleCreateCupSize = async () => {
+    if (!newCupSizeSize.trim() || !newCupSizeUnit.trim()) {
+      toast({ title: t('toast.error'), description: 'Size and unit are required', variant: 'destructive' });
+      return;
+    }
+
+    setIsCreatingCupSize(true);
+    try {
+      const result = await cupSizeApi.create({
+        size: newCupSizeSize.trim(),
+        unit: newCupSizeUnit.trim(),
+      });
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      setNewCupSizeSize('');
+      setNewCupSizeUnit('');
+      await fetchData();
+      toast({ title: t('toast.success'), description: 'Cup size created' });
+    } catch (error) {
+      toast({ title: t('toast.error'), description: 'Failed to create cup size', variant: 'destructive' });
+    } finally {
+      setIsCreatingCupSize(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -281,6 +343,25 @@ export function MenuItemManagement() {
             });
           }
         }
+
+        // Update cup size mappings
+        const currentSizeMappings = itemCupSizeMappings.filter((m) => m.menu_item_id === itemId);
+        const currentSizeIds = currentSizeMappings.map((m) => m.cup_size_id);
+
+        for (const mapping of currentSizeMappings) {
+          if (!formData.cup_size_ids.includes(mapping.cup_size_id)) {
+            await menuItemCupSizeMapApi.delete(mapping.id);
+          }
+        }
+
+        for (const cupSizeId of formData.cup_size_ids) {
+          if (!currentSizeIds.includes(cupSizeId)) {
+            await menuItemCupSizeMapApi.create({
+              menu_item_id: itemId,
+              cup_size_id: cupSizeId,
+            });
+          }
+        }
       }
 
       toast({ title: t('toast.success'), description: editingItem ? t('toast.menuItemUpdated') : t('toast.menuItemCreated') });
@@ -343,6 +424,11 @@ export function MenuItemManagement() {
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
+          {getItemCupSizes(item.id).map((cupSize) => (
+            <Badge key={cupSize.id} variant="outline" className="text-xs bg-amber-100 text-amber-900 border-amber-300">
+              {`${cupSize.size} (${cupSize.unit})`}
+            </Badge>
+          ))}
           {getItemCustomizationGroups(item.id).map((group) => (
             <Badge key={group.id} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
               {group.name}
@@ -521,6 +607,45 @@ export function MenuItemManagement() {
                 ))}
                 {toppingGroups.length === 0 && (
                   <p className="col-span-2 text-sm text-muted-foreground">{t('admin.menuItems.noToppingGroups')}</p>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cup Sizes</label>
+              <div className="grid grid-cols-5 gap-2">
+                <Input
+                  value={newCupSizeSize}
+                  onChange={(e) => setNewCupSizeSize(e.target.value)}
+                  placeholder="Size"
+                  className="col-span-2"
+                />
+                <Input
+                  value={newCupSizeUnit}
+                  onChange={(e) => setNewCupSizeUnit(e.target.value)}
+                  placeholder="Unit"
+                  className="col-span-2"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCreateCupSize}
+                  disabled={isCreatingCupSize}
+                >
+                  {isCreatingCupSize ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
+                {cupSizes.map((cupSize) => (
+                  <label key={cupSize.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={formData.cup_size_ids.includes(cupSize.id)}
+                      onCheckedChange={() => handleCupSizeToggle(cupSize.id)}
+                    />
+                    <span className="text-sm">{`${cupSize.size} (${cupSize.unit})`}</span>
+                  </label>
+                ))}
+                {cupSizes.length === 0 && (
+                  <p className="col-span-2 text-sm text-muted-foreground">No cup sizes available yet</p>
                 )}
               </div>
             </div>
