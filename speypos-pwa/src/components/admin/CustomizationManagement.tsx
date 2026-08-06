@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { customizationGroupApi, customizationOptionApi } from '@/lib/api';
-import type { CustomizationOptionGroup, CustomizationOption } from '@/types/pos';
+import type { CustomizationOptionGroup, CustomizationOption, CupSize } from '@/types/pos';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ interface GroupFormData {
 
 interface OptionFormData {
   label: string;
+  cup_size_id: string;
   price_delta: string;
   sort_order: string;
 }
@@ -33,6 +34,7 @@ const initialGroupForm: GroupFormData = {
 
 const initialOptionForm: OptionFormData = {
   label: '',
+  cup_size_id: '',
   price_delta: '0',
   sort_order: '0',
 };
@@ -40,10 +42,11 @@ const initialOptionForm: OptionFormData = {
 export function CustomizationManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { refresh: refreshMenuContext } = useMenu();
+  const { refresh: refreshMenuContext, cupSizes } = useMenu();
   const { format, normalizeInput, toDisplayValue, symbol: CURRENCY_SYMBOL, getMinorUnit } = useCurrency();
   const [groups, setGroups] = useState<CustomizationOptionGroup[]>([]);
   const [options, setOptions] = useState<CustomizationOption[]>([]);
+  const [availableCupSizes, setAvailableCupSizes] = useState<CupSize[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,12 +76,17 @@ export function CustomizationManagement() {
 
     if (groupsRes.data) setGroups(groupsRes.data);
     if (optionsRes.data) setOptions(optionsRes.data);
+    setAvailableCupSizes(cupSizes || []);
     setIsLoading(false);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setAvailableCupSizes(cupSizes || []);
+  }, [cupSizes]);
 
   const getGroupOptions = (groupId: string) => {
     return options.filter(o => o.customization_group_id === groupId);
@@ -173,6 +181,7 @@ export function CustomizationManagement() {
     setEditingOption(option);
     setOptionFormData({
       label: option.label,
+      cup_size_id: option.cup_size_id || '',
       price_delta: toDisplayValue(option.price_delta),
       sort_order: option.sort_order.toString(),
     });
@@ -202,6 +211,7 @@ export function CustomizationManagement() {
       if (editingOption) {
         const response = await customizationOptionApi.update(editingOption.id, {
           label: optionFormData.label.trim(),
+          cup_size_id: optionFormData.cup_size_id || null,
           price_delta: normalizeInput(priceDelta),
           sort_order: parseInt(optionFormData.sort_order, 10),
         });
@@ -211,6 +221,7 @@ export function CustomizationManagement() {
         const response = await customizationOptionApi.create({
           customization_group_id: selectedGroup.id,
           label: optionFormData.label.trim(),
+          cup_size_id: optionFormData.cup_size_id || null,
           price_delta: normalizeInput(priceDelta),
           sort_order: parseInt(optionFormData.sort_order, 10),
         });
@@ -496,6 +507,20 @@ export function CustomizationManagement() {
                 onChange={(e) => setOptionFormData({ ...optionFormData, label: e.target.value })}
                 placeholder="e.g., Large, No Sugar, Oat Milk"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Target Cup Size (optional)</Label>
+              <select
+                value={optionFormData.cup_size_id}
+                onChange={(e) => setOptionFormData({ ...optionFormData, cup_size_id: e.target.value })}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">None</option>
+                {availableCupSizes.map((cupSize) => (
+                  <option key={cupSize.id} value={cupSize.id}>{`${cupSize.size} (${cupSize.unit})`}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">When set, selecting this option overrides the item's baseline cup size.</p>
             </div>
             <div className="space-y-2">
               <Label>{t('admin.customizations.priceDelta')} ({CURRENCY_SYMBOL})</Label>

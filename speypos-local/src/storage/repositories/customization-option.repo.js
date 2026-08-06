@@ -39,20 +39,36 @@ export function getById(id) {
 }
 
 /**
+ * Retrieves customization options by a list of IDs.
+ * @param {string[]} ids
+ * @returns {Array<object>}
+ */
+export function getByIds(ids = []) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return [];
+  }
+
+  const db = getDb();
+  const placeholders = ids.map(() => '?').join(', ');
+  const stmt = db.prepare(`SELECT * FROM CustomizationOption WHERE id IN (${placeholders})`);
+  return stmt.all(...ids);
+}
+
+/**
  * Creates a new customization option.
  * @param {object} data
  * @returns {object} The newly created option.
  */
 export function create(data) {
   const db = getDb();
-  const { customization_group_id, label, price_delta, sort_order } = data;
+  const { customization_group_id, label, cup_size_id = null, price_delta, sort_order } = data;
   const id = randomUUID();
   const created_at = Date.now();
 
   const stmt = db.prepare(
-    'INSERT INTO CustomizationOption (id, customization_group_id, label, price_delta, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO CustomizationOption (id, customization_group_id, label, cup_size_id, price_delta, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
-  stmt.run(id, customization_group_id, label, price_delta, sort_order, created_at);
+  stmt.run(id, customization_group_id, label, cup_size_id, price_delta, sort_order, created_at);
   return getById(id);
 }
 

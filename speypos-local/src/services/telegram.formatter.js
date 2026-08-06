@@ -49,6 +49,22 @@ function formatOrderIdentifier(order) {
   return id.split('-')[0] || id;
 }
 
+function formatCupSizeSummary(summary, localization) {
+  if (!summary?.length) {
+    return '';
+  }
+
+  let message = `${localization.cup_size_summary}\n`;
+  for (const cupSize of summary) {
+    message += `${t(localization.cup_size_line, {
+      name: cupSize.name,
+      quantity: cupSize.quantity,
+    })}\n`;
+  }
+  message += '\n';
+  return message;
+}
+
 /**
  * Formats the order data into a human-readable string for Telegram.
  * @param {object} order - The full order object with items and staff.
@@ -90,7 +106,10 @@ export function formatOrderMessage(order, options = { isRetry: false }) {
   for (const [name, grouped] of groupedItems.entries()) {
     message += `*${name}*\n`; // Item name as a bold heading
     for (const item of grouped) {
-      const customizationValues = (item.customizations || []).map((c) => c.value).filter(Boolean);
+      const customizationValues = (item.customizations || [])
+        .filter((customization) => customization.option_type !== 'cup_size')
+        .map((c) => c.name)
+        .filter(Boolean);
 
       const toppingValues = (item.toppings || [])
         .map((topping) => {
@@ -169,6 +188,7 @@ export function formatShiftCloseMessage(shiftReport, options = { isRetry: false 
     totalRevenue,
     totalItems,
     revenueByPaymentType,
+    cupSizeSummary,
     voidedOrders,
     voidedAmount,
     voidedItems,
@@ -187,9 +207,10 @@ export function formatShiftCloseMessage(shiftReport, options = { isRetry: false 
   let message = t(l.shift_close_message.title, { date: shift.date }) + retryIndicator + '\n\n';
   message += t(l.shift_close_message.duration, { startTime: startDate, endTime: endDate }) + '\n\n';
   message += t(l.shift_close_message.total_orders, { totalOrders }) + '\n';
-  message += t(l.shift_close_message.total_items_sold, { totalItems }) + '\n';
+  message += t(l.shift_close_message.total_items_sold, { totalItems }) + '\n\n';
+  message += formatCupSizeSummary(cupSizeSummary, l.shift_close_message);
   if (voidedOrders && voidedOrders > 0) {
-    message += '\n';
+    message += '\n\n';
     message +=
       t(l.shift_close_message.voided_orders || 'Voided Orders: {count}', { count: voidedOrders }) +
       '\n';
@@ -238,6 +259,7 @@ export function formatDayCloseMessage(dayReport) {
     message += `*${t(l.day_close_summary.shift_section_header, { shiftNumber: index + 1 })}*\n`;
     message += `${t(l.day_close_summary.total_orders, { count: summary.totalOrders })}\n`;
     message += `${t(l.day_close_summary.total_items_sold, { totalItemsSold: summary.totalItems })}\n`;
+    message += formatCupSizeSummary(summary.cupSizeSummary, l.day_close_summary);
     message += `${t(l.day_close_summary.total_revenue, { amount: storeService.formatMoney(summary.totalRevenue) })}\n`;
     if (summary.voidedOrders && summary.voidedOrders > 0) {
       message += '\n';
@@ -257,6 +279,7 @@ export function formatDayCloseMessage(dayReport) {
   message += `\n*${l.day_close_summary.combined_section_header}*\n`;
   message += `${t(l.day_close_summary.total_orders, { count: combinedSummary.totalOrders })}\n`;
   message += `${t(l.day_close_summary.grand_total_items_sold, { grandTotalItemsSold: combinedSummary.grandTotalItems })}\n`;
+  message += formatCupSizeSummary(combinedSummary.cupSizeSummary, l.day_close_summary);
   message += `${t(l.day_close_summary.grand_total_revenue, { amount: storeService.formatMoney(combinedSummary.totalRevenue) })}\n`;
   if (combinedSummary.voidedOrders && combinedSummary.voidedOrders > 0) {
     message += '\n';

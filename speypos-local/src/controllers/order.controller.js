@@ -1,11 +1,109 @@
 import * as orderRepo from '../storage/repositories/order.repo.js';
 import * as paymentRepo from '../storage/repositories/payment.repo.js';
 import * as shiftRepo from '../storage/repositories/shift.repo.js';
+import * as customizationOptionRepo from '../storage/repositories/customization-option.repo.js';
+import * as cupSizeRepo from '../storage/repositories/cup-size.repo.js';
 import { printReceipt } from '../printer/printerService.js';
 import { logger } from '../utils/logger.js';
 import { serializeOrder } from '../serializers/order.serializer.js';
 import { ORDER_STATUS, ORDER_VOID_REASONS } from '../constants/order.constants.js';
 import { queueOrderSideEffects, queueVoidSideEffects } from '../services/outbox.service.js';
+
+export function normalizeOrderPayload(rawPayload) {
+  const inputItems = Array.isArray(rawPayload?.items) ? rawPayload.items : [];
+
+  const optionIds = [];
+  for (const item of inputItems) {
+    const customizations = Array.isArray(item?.customizations) ? item.customizations : [];
+    for (const cust of customizations) {
+      if (cust?.option_type === 'customization_option' && typeof cust?.value === 'string' && cust.value) {
+        optionIds.push(cust.value);
+      }
+    }
+  }
+
+  const uniqueOptionIds = Array.from(new Set(optionIds));
+  const options = customizationOptionRepo.getByIds(uniqueOptionIds);
+  const optionById = new Map(options.map((opt) => [opt.id, opt]));
+
+  const resolvedCupSizeIds = [];
+  const perItemResolved = inputItems.map((item) => {
+    const customizations = Array.isArray(item?.customizations) ? item.customizations : [];
+    let legacyCupSizeId = null;
+    const optionDrivenCupSizeIds = [];
+
+    for (const cust of customizations) {
+      if (cust?.option_type === 'cup_size' && typeof cust?.value === 'string' && cust.value) {
+        legacyCupSizeId = cust.value;
+      }
+      if (cust?.option_type === 'customization_option' && typeof cust?.value === 'string' && cust.value) {
+        const option = optionById.get(cust.value);
+        if (option?.cup_size_id) {
+          optionDrivenCupSizeIds.push(option.cup_size_id);
+        }
+      }
+    }
+
+    const resolvedCupSizeId = optionDrivenCupSizeIds.at(-1) || legacyCupSizeId || null;
+    if (resolvedCupSizeId) {
+      resolvedCupSizeIds.push(resolvedCupSizeId);
+    }
+
+    return {
+      customizations,
+      resolvedCupSizeId,
+    };
+  });
+
+  const uniqueCupSizeIds = Array.from(new Set(resolvedCupSizeIds));
+  const cupSizes = cupSizeRepo.getCupSizesByIds(uniqueCupSizeIds);
+  const cupSizeById = new Map(cupSizes.map((cupSize) => [cupSize.id, cupSize]));
+
+  const normalizedItems = inputItems.map((item, index) => {
+    const { customizations, resolvedCupSizeId } = perItemResolved[index];
+
+    const normalizedCustomizations = [];
+    for (const cust of customizations) {
+      if (cust?.option_type === 'cup_size') {
+        continue;
+      }
+
+      if (cust?.option_type === 'customization_option' && typeof cust?.value === 'string' && cust.value) {
+        const option = optionById.get(cust.value);
+        normalizedCustomizations.push({
+          name: option?.label || cust.name,
+          option_type: 'customization_option',
+          value: cust.value,
+          price: cust.price,
+        });
+        continue;
+      }
+
+      normalizedCustomizations.push(cust);
+    }
+
+    if (resolvedCupSizeId) {
+      const cupSize = cupSizeById.get(resolvedCupSizeId);
+      const cupSizeName = cupSize ? `${cupSize.size} (${cupSize.unit})` : 'Cup Size';
+      normalizedCustomizations.unshift({
+        name: cupSizeName,
+        option_type: 'cup_size',
+        value: resolvedCupSizeId,
+        price: 0,
+      });
+    }
+
+    return {
+      ...item,
+      customizations: normalizedCustomizations,
+    };
+  });
+
+  return {
+    ...rawPayload,
+    items: normalizedItems,
+  };
+}
 
 function toCreateOrderLifecycleErrorResponse(error) {
   switch (error?.code) {
@@ -90,14 +188,14 @@ export function getOrder(req, res) {
 export function createOrder(req, res) {
   try {
     const { shift_id, staff_id, items } = req.body;
-    console.log('Order data: ', req.body);
     if (!shift_id || !staff_id || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         error: 'Missing required fields: shift_id, staff_id, and a non-empty items array',
       });
     }
 
-    const newOrder = orderRepo.createOrder(req.body);
+    const normalizedPayload = normalizeOrderPayload(req.body);
+    const newOrder = orderRepo.createOrder(normalizedPayload);
     res.status(201).json(serializeOrder(newOrder));
   } catch (error) {
     const lifecycleError = toCreateOrderLifecycleErrorResponse(error);

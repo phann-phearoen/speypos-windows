@@ -31,6 +31,9 @@ export interface Customization {
   name: string;
   price: number;
   group?: string;
+  option_type?: string | null;
+  value?: string;
+  cup_size_id?: string | null;
 }
 
 // New customization option group (from DB)
@@ -50,6 +53,7 @@ export interface CustomizationOption {
   id: string;
   customization_group_id: string;
   label: string;
+  cup_size_id?: string | null;
   price_delta: number; // in cents
   sort_order: number;
   created_at?: number;
@@ -215,6 +219,13 @@ export interface DayClosePreviewResponse {
   business_day_id?: string | null;
   business_day_status?: BusinessDayStatus | null;
   shifts: DayCloseShiftSummary[];
+  cupSizeSummary: CupSizeSummary[];
+}
+
+export interface CupSizeSummary {
+  id: string | null;
+  name: string;
+  quantity: number;
 }
 
 export type DayCloseStatusReason = 'DAY_ALREADY_CLOSED' | 'DAY_NOT_READY' | 'NO_SHIFTS' | null;
@@ -235,6 +246,7 @@ export interface DayCloseShiftReport {
   totalRevenue: number;
   totalItems: number;
   revenueByPaymentType: Record<string, number>;
+  cupSizeSummary: CupSizeSummary[];
   voidedOrders: number;
   voidedAmount: number;
   voidedItems: number;
@@ -246,6 +258,7 @@ export interface DayCloseCombinedSummary {
   totalRevenue: number;
   totalItems: number;
   revenueByPaymentType: Record<string, number>;
+  cupSizeSummary: CupSizeSummary[];
   grandTotalItems: number;
   voidedOrders: number;
   voidedAmount: number;
@@ -278,6 +291,20 @@ export interface DayCloseShiftSummary {
   started_at?: number;
   ended_at?: number;
   orders: Order[];
+  cupSizeSummary: CupSizeSummary[];
+}
+
+export interface ShiftSalesReport {
+  shift: Shift;
+  totalOrders: number;
+  totalRevenue: number;
+  totalItems: number;
+  revenueByPaymentType: Record<string, number>;
+  cupSizeSummary: CupSizeSummary[];
+  voidedOrders: number;
+  voidedAmount: number;
+  voidedItems: number;
+  netRevenue: number;
 }
 
 export interface Payment {
@@ -345,6 +372,7 @@ export interface UICustomizationOption {
   price: number;
   group: string;
   isDefault?: boolean;
+  cup_size_id?: string | null;
 }
 
 export interface CustomizationGroup {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getShifts,
   getShift,
+  getShiftSalesReport,
   getOpenShifts,
   createShift,
   updateShift,
@@ -25,6 +26,7 @@ router.get('/shift/day-status/previous', getPreviousDayStatus);
 // Standard CRUD endpoints
 router.get('/shift', getShifts);
 router.get('/shift/open', getOpenShifts);
+router.get('/shift/:id/report', getShiftSalesReport);
 router.get('/shift/:id', getShift);
 router.post('/shift', createShift);
 router.patch('/shift/:id', updateShift);

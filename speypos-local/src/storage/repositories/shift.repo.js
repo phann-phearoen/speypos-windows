@@ -312,6 +312,87 @@ export function markAsTelegramReported(id) {
   return getShiftById(id);
 }
 
+function getCupSizeSummaryForShift(shiftId) {
+  const db = getDb();
+  const rows = db.prepare(
+    `WITH shift_items AS (
+       SELECT oi.id AS order_item_id, oi.menu_item_id, oi.quantity
+       FROM OrderItem oi
+       JOIN "Order" o ON o.id = oi.order_id
+       WHERE o.shift_id = ? AND o.status = 'completed'
+     ),
+     canonical_cup AS (
+       SELECT order_item_id, cup_size_id, cup_size_label
+       FROM (
+         SELECT
+           oc.order_item_id,
+           cs.id AS cup_size_id,
+           cs.size || ' ' || cs.unit AS cup_size_label,
+           ROW_NUMBER() OVER (PARTITION BY oc.order_item_id ORDER BY oc.rowid DESC, oc.id DESC) AS row_number
+         FROM OrderCustomization oc
+         JOIN CupSize cs ON cs.id = oc.value
+         WHERE oc.option_type = 'cup_size'
+       )
+       WHERE row_number = 1
+     ),
+     item_map_cup AS (
+       SELECT order_item_id, cup_size_id, cup_size_label
+       FROM (
+         SELECT
+           si.order_item_id,
+           cs.id AS cup_size_id,
+           cs.size || ' ' || cs.unit AS cup_size_label,
+           ROW_NUMBER() OVER (
+             PARTITION BY si.order_item_id
+             ORDER BY cs.created_at ASC, micm.id ASC, cs.id ASC
+           ) AS row_number
+         FROM shift_items si
+         JOIN MenuItemCupSizeMap micm ON micm.menu_item_id = si.menu_item_id
+         JOIN CupSize cs ON cs.id = micm.cup_size_id
+       )
+       WHERE row_number = 1
+     ),
+     category_map_cup AS (
+       SELECT order_item_id, cup_size_id, cup_size_label
+       FROM (
+         SELECT
+           si.order_item_id,
+           cs.id AS cup_size_id,
+           cs.size || ' ' || cs.unit AS cup_size_label,
+           ROW_NUMBER() OVER (
+             PARTITION BY si.order_item_id
+             ORDER BY micm.menu_category_id ASC, cs.created_at ASC, mccsm.id ASC, cs.id ASC
+           ) AS row_number
+         FROM shift_items si
+         JOIN MenuItemCategoryMap micm ON micm.menu_item_id = si.menu_item_id
+         JOIN MenuCategoryCupSizeMap mccsm ON mccsm.menu_category_id = micm.menu_category_id
+         JOIN CupSize cs ON cs.id = mccsm.cup_size_id
+       )
+       WHERE row_number = 1
+     ),
+     resolved_cup_sizes AS (
+       SELECT
+         COALESCE(canonical_cup.cup_size_id, item_map_cup.cup_size_id, category_map_cup.cup_size_id) AS cup_size_id,
+         COALESCE(canonical_cup.cup_size_label, item_map_cup.cup_size_label, category_map_cup.cup_size_label, 'Unknown') AS name,
+         shift_items.quantity
+       FROM shift_items
+       LEFT JOIN canonical_cup ON canonical_cup.order_item_id = shift_items.order_item_id
+       LEFT JOIN item_map_cup ON item_map_cup.order_item_id = shift_items.order_item_id
+       LEFT JOIN category_map_cup ON category_map_cup.order_item_id = shift_items.order_item_id
+     )
+     SELECT cup_size_id, name, SUM(quantity) AS quantity
+     FROM resolved_cup_sizes
+     GROUP BY cup_size_id, name
+     ORDER BY quantity DESC, name ASC`
+  ).all(shiftId);
+
+  return rows.map((row) => ({
+    id: row.cup_size_id || null,
+    name: row.name,
+    quantity: row.quantity,
+  }));
+}
+
 /**
  * Generates a sales report for a given shift.
  * @param {string} shiftId - The ID of the shift.
@@ -360,12 +441,15 @@ export function getShiftSalesReport(shiftId) {
     return acc;
   }, {});
 
+  const cupSizeSummary = getCupSizeSummaryForShift(shiftId);
+
   return {
     shift,
     totalOrders,
     totalRevenue,
     totalItems,
     revenueByPaymentType,
+    cupSizeSummary,
     voidedOrders: voidedOrders.length,
     voidedAmount,
     voidedItems,

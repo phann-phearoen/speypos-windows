@@ -140,6 +140,20 @@ export function getShift(req, res) {
   }
 }
 
+export function getShiftSalesReport(req, res) {
+  try {
+    const report = shiftRepo.getShiftSalesReport(req.params.id);
+    if (!report) {
+      return res.status(404).json({ error: `Shift with ID ${req.params.id} not found` });
+    }
+
+    res.status(200).json(report);
+  } catch (error) {
+    logger.error('Failed to get shift sales report', { error: error.message });
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 /**
  * Handles the request to create a new shift.
  * A shift is typically started with a status of 'open'.

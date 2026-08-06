@@ -1,5 +1,5 @@
 // API Client for SpeyPOS Local Backend
-import type { DayClosePreviewResponse, DayCloseResponse, DayCloseStatusResponse, Order, PreviousDayStatus } from '@/types/pos';
+import type { DayClosePreviewResponse, DayCloseResponse, DayCloseStatusResponse, Order, PreviousDayStatus, ShiftSalesReport } from '@/types/pos';
 
 const API_BASE = 'http://localhost:8080/api';
 const BACKEND_URL = 'http://localhost:8080';
@@ -245,6 +245,7 @@ export const staffApi = {
 export const shiftApi = {
   getShifts: () => request<any[]>('/shift'),
   getShift: (id: string) => request<any>(`/shift/${id}`),
+  getSalesReport: (id: string) => request<ShiftSalesReport>(`/shift/${id}/report`),
   getShiftsByDate: (date: string) => request<any[]>(`/shift?date=${date}`),
   getOpenShifts: () => request<any[]>('/shift/open'),
   // Backend handles date using store timezone - no date param needed
@@ -329,12 +330,12 @@ export const customizationOptionApi = {
   getAll: () => request<any[]>('/customization-option'),
   getByGroup: (groupId: string) =>
     request<any[]>(`/customization-option?customization_group_id=${groupId}`),
-  create: (data: { customization_group_id: string; label: string; price_delta: number; sort_order?: number }) =>
+  create: (data: { customization_group_id: string; label: string; cup_size_id?: string | null; price_delta: number; sort_order?: number }) =>
     adminRequest<any>('/customization-option', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  update: (id: string, data: Partial<{ label: string; price_delta: number; sort_order: number }>) =>
+  update: (id: string, data: Partial<{ label: string; cup_size_id: string | null; price_delta: number; sort_order: number }>) =>
     adminRequest<any>(`/customization-option/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

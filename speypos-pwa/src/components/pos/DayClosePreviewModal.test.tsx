@@ -71,6 +71,7 @@ beforeEach(() => {
         'admin.orderHistory.orders': 'Orders',
         'admin.orderHistory.items': 'Items',
         'admin.orderHistory.revenue': 'Revenue',
+        'shift.cupSizeSummary': 'Cup Size Summary',
         'admin.orderHistory.statusVoided': 'Voided',
         'common.cancel': 'Cancel',
         'common.unknown': 'Unknown',
@@ -83,6 +84,7 @@ beforeEach(() => {
   mocks.mockGetCloseDayPreview.mockResolvedValue({
     data: {
       businessDate: '2026-07-27',
+      cupSizeSummary: [{ id: 'cup-16oz', name: '16 oz', quantity: 3 }],
       shifts: [
         {
           id: 'shift-1',
@@ -95,6 +97,16 @@ beforeEach(() => {
     error: null,
     errorCode: null,
   });
+});
+
+test('shows the backend-provided cup-size summary below the top metrics', async () => {
+  render(
+    <DayClosePreviewModal open={true} onClose={vi.fn()} onComplete={vi.fn()} targetDate="2026-07-27" />
+  );
+
+  expect(await screen.findByText('Cup Size Summary')).toBeInTheDocument();
+  expect(screen.getByText('16 oz:')).toBeInTheDocument();
+  expect(screen.getByText('3')).toBeInTheDocument();
 });
 
 test('treats DAY_ALREADY_CLOSED as terminal success and calls onSuccess', async () => {

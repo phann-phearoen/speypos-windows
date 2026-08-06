@@ -30,9 +30,22 @@ function toMajor(integerAmount, currencyCode) {
   return Number(value.toFixed(meta.minorUnit));
 }
 
-function buildOrderEvent(order, currencyCode) {
+function extractCupSizeSnapshot(customizations = []) {
+  const cupSizeRow = customizations.find((c) => c?.option_type === 'cup_size' && c?.value);
+  if (!cupSizeRow) {
+    return null;
+  }
+
+  return {
+    id: cupSizeRow.value,
+    name: cupSizeRow.name || null,
+  };
+}
+
+export function buildOrderEvent(order, currencyCode) {
   const currency = currencyCode || storeService.getCurrency() || 'USD';
   const items = (order.items || []).map((item) => ({
+    cup_size: extractCupSizeSnapshot(item.customizations || []),
     id: item.id,
     menu_item_id: item.menu_item_id,
     name: item.menu_item_name || item.name || null,

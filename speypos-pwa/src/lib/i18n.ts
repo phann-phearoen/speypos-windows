@@ -108,6 +108,7 @@ const translations: Record<string, TranslationDictionary> = {
     'shift.closePreview.loading': 'Loading orders...',
     'shift.closePreview.closing': 'Closing...',
     'shift.closePreview.confirm': 'Confirm Close Shift',
+    'shift.cupSizeSummary': 'Cup Size Summary',
     'shift.closePreview.shiftClosed': 'Shift Closed',
     'shift.closePreview.shiftClosedDesc': 'Shift ended for {{name}}',
     
@@ -583,6 +584,7 @@ const translations: Record<string, TranslationDictionary> = {
     'shift.closePreview.loading': 'កំពុងផ្ទុកការកម្មង់...',
     'shift.closePreview.closing': 'កំពុងបិទ...',
     'shift.closePreview.confirm': 'បញ្ជាក់បិទវេន',
+    'shift.cupSizeSummary': 'សង្ខេបទំហំកែវ',
     'shift.closePreview.shiftClosed': 'បានបិទវេន',
     'shift.closePreview.shiftClosedDesc': 'វេនបានបញ្ចប់សម្រាប់ {{name}}',
     

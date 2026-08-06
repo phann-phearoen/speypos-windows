@@ -186,3 +186,76 @@ test('direct repository order writes are blocked for an open shift from a previo
   const allOrders = getAllOrders({ shift_id: shiftId });
   assert.equal(allOrders.length, 0);
 });
+
+test('shift report resolves cup sizes by canonical customization, item map, category map, then Unknown', () => {
+  const db = getDb();
+  const { todayStoreDate } = getNowInStoreTime();
+  const shiftId = randomUUID();
+  const categoryId = randomUUID();
+  const canonicalCupId = randomUUID();
+  const itemCupId = randomUUID();
+  const categoryCupId = randomUUID();
+  const now = Date.now();
+
+  insertShift(db, { id: shiftId, status: 'open', date: todayStoreDate });
+  db.prepare('INSERT INTO MenuCategory (id, name, image_url, sort_order, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(categoryId, 'Cup Report Category', null, 0, now);
+
+  const cupSizes = [
+    [canonicalCupId, '12', 'oz'],
+    [itemCupId, '16', 'oz'],
+    [categoryCupId, '20', 'oz'],
+  ];
+  const insertCupSize = db.prepare(
+    'INSERT INTO CupSize (id, size, unit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+  );
+  for (const [id, size, unit] of cupSizes) {
+    insertCupSize.run(id, size, unit, now, null);
+  }
+
+  const menuItemIds = Array.from({ length: 4 }, () => randomUUID());
+  const insertMenuItem = db.prepare(
+    'INSERT INTO MenuItem (id, name, image_url, price, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  );
+  for (const [index, id] of menuItemIds.entries()) {
+    insertMenuItem.run(id, `Cup Report Item ${index}`, null, 2500, 0, now, null);
+  }
+
+  db.prepare('INSERT INTO MenuItemCupSizeMap (id, menu_item_id, cup_size_id) VALUES (?, ?, ?)')
+    .run(randomUUID(), menuItemIds[0], itemCupId);
+  db.prepare('INSERT INTO MenuItemCupSizeMap (id, menu_item_id, cup_size_id) VALUES (?, ?, ?)')
+    .run(randomUUID(), menuItemIds[1], itemCupId);
+  db.prepare('INSERT INTO MenuItemCategoryMap (id, menu_item_id, menu_category_id) VALUES (?, ?, ?)')
+    .run(randomUUID(), menuItemIds[2], categoryId);
+  db.prepare('INSERT INTO MenuCategoryCupSizeMap (id, menu_category_id, cup_size_id) VALUES (?, ?, ?)')
+    .run(randomUUID(), categoryId, categoryCupId);
+
+  const insertOrder = db.prepare(
+    `INSERT INTO "Order" (id, shift_id, staff_id, status, customer_type, total_amount, total_items, created_at)
+     VALUES (?, ?, ?, 'completed', 'dine-in', ?, ?, ?)`
+  );
+  const insertOrderItem = db.prepare(
+    'INSERT INTO OrderItem (id, order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?, ?)'
+  );
+  const quantities = [2, 3, 4, 5];
+  const orderItemIds = [];
+  for (const [index, menuItemId] of menuItemIds.entries()) {
+    const orderId = randomUUID();
+    const orderItemId = randomUUID();
+    insertOrder.run(orderId, shiftId, staffId, 2500 * quantities[index], quantities[index], now + index);
+    insertOrderItem.run(orderItemId, orderId, menuItemId, quantities[index], 2500);
+    orderItemIds.push(orderItemId);
+  }
+  db.prepare(
+    'INSERT INTO OrderCustomization (id, order_item_id, name, option_type, value, price) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(randomUUID(), orderItemIds[0], '12 oz', 'cup_size', canonicalCupId, 0);
+
+  const report = getShiftSalesReport(shiftId);
+
+  assert.deepEqual(report.cupSizeSummary, [
+    { id: null, name: 'Unknown', quantity: 5 },
+    { id: categoryCupId, name: '20 oz', quantity: 4 },
+    { id: itemCupId, name: '16 oz', quantity: 3 },
+    { id: canonicalCupId, name: '12 oz', quantity: 2 },
+  ]);
+});

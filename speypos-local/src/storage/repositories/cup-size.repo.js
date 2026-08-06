@@ -13,6 +13,17 @@ export function getCupSizeById(id) {
   return stmt.get(id);
 }
 
+export function getCupSizesByIds(ids = []) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return [];
+  }
+
+  const db = getDb();
+  const placeholders = ids.map(() => '?').join(', ');
+  const stmt = db.prepare(`SELECT * FROM CupSize WHERE id IN (${placeholders})`);
+  return stmt.all(...ids);
+}
+
 export function createCupSize(data) {
   const db = getDb();
   const { size, unit } = data;

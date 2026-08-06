@@ -6,6 +6,23 @@ import { sendTelegramEvent } from './telegram.service.js';
 import { formatDayCloseMessage } from './telegram.formatter.js';
 import { serializeManyShifts } from '../serializers/shift.serializer.js';
 
+function combineCupSizeSummaries(summaries) {
+  const totals = new Map();
+
+  for (const summary of summaries) {
+    for (const cupSize of summary || []) {
+      const key = cupSize.id || 'unknown';
+      const existing = totals.get(key) || { id: cupSize.id || null, name: cupSize.name, quantity: 0 };
+      existing.quantity += cupSize.quantity;
+      totals.set(key, existing);
+    }
+  }
+
+  return [...totals.values()].sort(
+    (left, right) => right.quantity - left.quantity || left.name.localeCompare(right.name)
+  );
+}
+
 /**
  * Retrieves the data needed for a day-close review screen.
  * Fetches all shifts for the given business date (or today if not provided) and all orders within each shift.
@@ -21,12 +38,14 @@ export async function getReviewDataForDayClose(targetDate) {
 
   const shiftsWithOrders = serializedShifts.map(shift => {
     const orders = orderRepo.getAllOrders({ shift_id: shift.id });
-    return { ...shift, orders };
+    const report = shiftRepo.getShiftSalesReport(shift.id);
+    return { ...shift, orders, cupSizeSummary: report?.cupSizeSummary || [] };
   });
 
   return {
     businessDate,
     shifts: shiftsWithOrders,
+    cupSizeSummary: combineCupSizeSummaries(shiftsWithOrders.map((shift) => shift.cupSizeSummary)),
   };
 }
 
@@ -58,6 +77,7 @@ export async function generateDayCloseReport(targetDate) {
     voidedAmount: 0,
     voidedItems: 0,
     netRevenue: 0,
+    cupSizeSummary: [],
   };
 
   for (const report of shiftReports) {
@@ -76,6 +96,10 @@ export async function generateDayCloseReport(targetDate) {
     }
     combined.grandTotalItems += report.totalItems;
   }
+
+  combined.cupSizeSummary = combineCupSizeSummaries(
+    shiftReports.map((report) => report.cupSizeSummary)
+  );
 
   const finalReport = {
     businessDate,

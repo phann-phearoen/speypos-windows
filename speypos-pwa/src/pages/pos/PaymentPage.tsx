@@ -128,7 +128,8 @@ export default function PaymentPage() {
       unit_price: item.unit_price,
       customizations: item.customizations.map((c) => ({
         name: c.group,
-        value: c.name,
+        option_type: c.option_type || null,
+        value: c.value || c.name,
         price: c.price,
       })),
       toppings: (item.toppings || [])

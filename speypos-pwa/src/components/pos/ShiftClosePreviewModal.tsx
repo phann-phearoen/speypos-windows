@@ -9,11 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { orderApi } from '@/lib/api';
+import { orderApi, shiftApi } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 import { useCurrency } from '@/lib/currency';
 import { useDateTime } from '@/lib/datetime';
-import type { Order, OrderItem } from '@/types/pos';
+import type { CupSizeSummary, Order, OrderItem } from '@/types/pos';
 import { Badge } from '@/components/ui/badge';
 
 interface ShiftClosePreviewModalProps {
@@ -37,6 +37,7 @@ export function ShiftClosePreviewModal({
   const { format: formatPrice } = useCurrency();
   const { formatTime } = useDateTime();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [cupSizeSummary, setCupSizeSummary] = useState<CupSizeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,14 +52,18 @@ export function ShiftClosePreviewModal({
 
   const loadOrders = async () => {
     setLoading(true);
-    const { data, error } = await orderApi.getOrdersByShift(shiftId);
-    if (!error && data) {
+    const [ordersResult, reportResult] = await Promise.all([
+      orderApi.getOrdersByShift(shiftId),
+      shiftApi.getSalesReport(shiftId),
+    ]);
+    if (!ordersResult.error && ordersResult.data) {
       // Sort by created_at descending (newest first)
-      const sorted = [...data].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+      const sorted = [...ordersResult.data].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
       setOrders(sorted);
     } else {
       setOrders([]);
     }
+    setCupSizeSummary(reportResult.data?.cupSizeSummary || []);
     setLoading(false);
     setCurrentPage(1);
   };
@@ -145,6 +150,21 @@ export function ShiftClosePreviewModal({
                   </div>
                 </div>
               </div>
+
+              {cupSizeSummary.length > 0 && (
+                <div className="mb-4 border border-border px-4 py-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    {t('shift.cupSizeSummary')}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    {cupSizeSummary.map((cupSize) => (
+                      <span key={cupSize.id || 'unknown'}>
+                        {cupSize.name}: <span className="font-medium">{cupSize.quantity}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Order List */}
               <div className="flex-1 -mx-6 px-6 max-h-[70vh] min-h-[50vh] overflow-y-auto">

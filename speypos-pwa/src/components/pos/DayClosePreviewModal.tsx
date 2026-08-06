@@ -199,6 +199,21 @@ export function DayClosePreviewModal({
                 </div>
               </div>
 
+              {preview.cupSizeSummary.length > 0 && (
+                <div className="mb-4 border border-border px-4 py-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    {t('shift.cupSizeSummary')}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    {preview.cupSizeSummary.map((cupSize) => (
+                      <span key={cupSize.id || 'unknown'}>
+                        {cupSize.name}: <span className="font-medium">{cupSize.quantity}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Shifts List */}
               <div className="flex-1 -mx-6 px-6 min-h-[50h] max-h-[70vh] overflow-y-auto">
                 <div className="space-y-3 pb-4">

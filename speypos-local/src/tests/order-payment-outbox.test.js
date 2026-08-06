@@ -10,6 +10,7 @@ let createPayment;
 let createOrder;
 let createMenuItem;
 let getOutboxStats;
+let getNowInStoreTime;
 
 const dbPath = `data/test-payment-outbox-${Date.now()}.db`;
 const staffId = 'test-staff-payment';
@@ -46,6 +47,7 @@ before(async () => {
   ({ createOrder } = await import('../storage/repositories/order.repo.js'));
   ({ createMenuItem } = await import('../storage/repositories/menu-item.repo.js'));
   ({ getOutboxStats } = await import('../storage/repositories/outbox.repo.js'));
+  ({ getNowInStoreTime } = await import('../services/time.service.js'));
 
   initializeDatabase();
 
@@ -55,10 +57,11 @@ before(async () => {
      VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(staffId, 'Payment Staff', 'pw', 'staff', 'active', Date.now(), null);
 
+  const { todayStoreDate } = getNowInStoreTime();
   db.prepare(
     `INSERT OR IGNORE INTO Shift (id, status, started_at, ended_at, date, telegram_reported_at)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).run('shift-payment-1', 'open', Date.now(), null, '2026-05-27', null);
+  ).run('shift-payment-1', 'open', Date.now(), null, todayStoreDate, null);
 
   createMenuItem({
     id: 'menu-payment-1',
