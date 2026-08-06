@@ -15,6 +15,7 @@ import { useCurrency } from '@/lib/currency';
 import { useDateTime } from '@/lib/datetime';
 import type { CupSizeSummary, Order, OrderItem } from '@/types/pos';
 import { Badge } from '@/components/ui/badge';
+import { sortCupSizeSummaries } from '@/lib/cupSizeSort';
 
 interface ShiftClosePreviewModalProps {
   open: boolean;
@@ -152,12 +153,12 @@ export function ShiftClosePreviewModal({
               </div>
 
               {cupSizeSummary.length > 0 && (
-                <div className="mb-4 border border-border px-4 py-3">
+                <div className="mb-4 border border-border px-4 py-3 rounded-lg">
                   <div className="text-xs font-medium text-muted-foreground mb-2">
                     {t('shift.cupSizeSummary')}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    {cupSizeSummary.map((cupSize) => (
+                    {sortCupSizeSummaries(cupSizeSummary).map((cupSize) => (
                       <span key={cupSize.id || 'unknown'}>
                         {cupSize.name}: <span className="font-medium">{cupSize.quantity}</span>
                       </span>

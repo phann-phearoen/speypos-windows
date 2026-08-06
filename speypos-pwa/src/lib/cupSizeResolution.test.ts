@@ -20,7 +20,7 @@ describe('resolveEffectiveCupSizesForItem', () => {
       ],
     });
 
-    expect(result.map((item) => item.id)).toEqual(['s', 'm']);
+    expect(result.map((item) => item.id)).toEqual(['m', 's']);
   });
 
   it('uses only item cup sizes when item mappings exist', () => {
@@ -53,6 +53,28 @@ describe('resolveEffectiveCupSizesForItem', () => {
       ],
     });
 
-    expect(result.map((item) => item.id)).toEqual(['m', 'l']);
+    expect(result.map((item) => item.id)).toEqual(['l', 'm']);
+  });
+
+  it('sorts numeric cup sizes by their size value', () => {
+    const result = resolveEffectiveCupSizesForItem({
+      menuItemId: 'item-1',
+      categoryIds: ['cat-1'],
+      cupSizes: [
+        { id: '32', size: '32', unit: 'oz' },
+        { id: '18', size: '18', unit: 'oz' },
+        { id: '22', size: '22', unit: 'oz' },
+        { id: '20', size: '20', unit: 'oz' },
+      ],
+      itemCupSizeMappings: [],
+      categoryCupSizeMappings: [
+        { id: 'map-32', menu_category_id: 'cat-1', cup_size_id: '32' },
+        { id: 'map-18', menu_category_id: 'cat-1', cup_size_id: '18' },
+        { id: 'map-22', menu_category_id: 'cat-1', cup_size_id: '22' },
+        { id: 'map-20', menu_category_id: 'cat-1', cup_size_id: '20' },
+      ],
+    });
+
+    expect(result.map((item) => item.id)).toEqual(['18', '20', '22', '32']);
   });
 });

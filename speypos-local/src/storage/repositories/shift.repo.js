@@ -383,7 +383,10 @@ function getCupSizeSummaryForShift(shiftId) {
      SELECT cup_size_id, name, SUM(quantity) AS quantity
      FROM resolved_cup_sizes
      GROUP BY cup_size_id, name
-     ORDER BY quantity DESC, name ASC`
+     ORDER BY
+       CASE WHEN cup_size_id IS NULL THEN 1 ELSE 0 END,
+       CAST(name AS REAL) ASC,
+       name ASC`
   ).all(shiftId);
 
   return rows.map((row) => ({

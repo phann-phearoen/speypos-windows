@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { menuApi, categoryApi, categoryMapApi, customizationGroupApi, menuItemCustomizationGroupApi, toppingGroupApi, menuItemToppingGroupApi, resolveImageUrl, cupSizeApi, menuItemCupSizeMapApi } from '@/lib/api';
 import type { MenuItem, MenuCategory, MenuItemCategoryMap, CustomizationOptionGroup, MenuItemCustomizationGroup, ToppingGroup, MenuItemToppingGroup, CupSize, MenuItemCupSizeMap } from '@/types/pos';
+import { sortCupSizes } from '@/lib/cupSizeSort';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCurrency } from '@/lib/currency';
 import { ImageUpload } from './ImageUpload';
@@ -96,12 +97,7 @@ export function MenuItemManagement() {
     }
     if (toppingMappingsRes.data) setToppingMappings(toppingMappingsRes.data);
     if (cupSizesRes.data) {
-      const sortedCupSizes = [...cupSizesRes.data].sort((a, b) => {
-        const bySize = a.size.localeCompare(b.size);
-        if (bySize !== 0) return bySize;
-        return a.unit.localeCompare(b.unit);
-      });
-      setCupSizes(sortedCupSizes);
+      setCupSizes(sortCupSizes(cupSizesRes.data));
     }
     if (itemCupSizeMappingsRes.data) setItemCupSizeMappings(itemCupSizeMappingsRes.data);
     setIsLoading(false);

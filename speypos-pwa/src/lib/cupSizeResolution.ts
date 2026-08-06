@@ -1,4 +1,5 @@
 import type { CupSize, MenuCategoryCupSizeMap, MenuItemCupSizeMap } from '@/types/pos';
+import { sortCupSizes } from './cupSizeSort';
 
 export function resolveEffectiveCupSizesForItem(params: {
   menuItemId: string;
@@ -21,5 +22,5 @@ export function resolveEffectiveCupSizesForItem(params: {
     ? Array.from(new Set(itemCupSizeIds))
     : Array.from(new Set(categoryCupSizeIds));
 
-  return cupSizes.filter((cupSize) => effectiveCupSizeIds.includes(cupSize.id));
+  return sortCupSizes(cupSizes.filter((cupSize) => effectiveCupSizeIds.includes(cupSize.id)));
 }

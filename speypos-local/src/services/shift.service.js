@@ -18,9 +18,16 @@ function combineCupSizeSummaries(summaries) {
     }
   }
 
-  return [...totals.values()].sort(
-    (left, right) => right.quantity - left.quantity || left.name.localeCompare(right.name)
-  );
+  return [...totals.values()].sort((left, right) => {
+    if (!left.id || !right.id) {
+      return !left.id === !right.id ? 0 : !left.id ? 1 : -1;
+    }
+
+    const sizeDifference = Number.parseFloat(left.name) - Number.parseFloat(right.name);
+    return Number.isNaN(sizeDifference) || sizeDifference === 0
+      ? left.name.localeCompare(right.name)
+      : sizeDifference;
+  });
 }
 
 /**

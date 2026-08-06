@@ -3,7 +3,14 @@ import { getDb } from '../database.js';
 
 export function getAllCupSizes() {
   const db = getDb();
-  const stmt = db.prepare('SELECT * FROM CupSize ORDER BY size ASC, unit ASC');
+  const stmt = db.prepare(
+    `SELECT * FROM CupSize
+     ORDER BY
+       CASE WHEN CAST(size AS REAL) > 0 THEN 0 ELSE 1 END,
+       CAST(size AS REAL) ASC,
+       size ASC,
+       unit ASC`
+  );
   return stmt.all();
 }
 

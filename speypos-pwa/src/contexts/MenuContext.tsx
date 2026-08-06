@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { menuApi, categoryApi, menuItemCustomizationGroupApi, menuCategoryCustomizationGroupApi, menuItemToppingGroupApi, menuCategoryToppingGroupApi, cupSizeApi, menuItemCupSizeMapApi, menuCategoryCupSizeMapApi } from '@/lib/api';
 import type { MenuItem, MenuCategory, MenuItemCustomizationGroup, MenuCategoryCustomizationGroup, MenuItemToppingGroup, MenuCategoryToppingGroup, CupSize, MenuItemCupSizeMap, MenuCategoryCupSizeMap } from '@/types/pos';
+import { sortCupSizes } from '@/lib/cupSizeSort';
 
 interface MenuContextType {
   categories: MenuCategory[];
@@ -66,7 +67,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setCategoryCustomizationMappings(categoryMappingResult.data || []);
     setToppingMappings(toppingMappingResult.data || []);
     setCategoryToppingMappings(categoryToppingMappingResult.data || []);
-    setCupSizes(cupSizeResult.data || []);
+    setCupSizes(sortCupSizes(cupSizeResult.data || []));
     setItemCupSizeMappings(itemCupSizeMapResult.data || []);
     setCategoryCupSizeMappings(categoryCupSizeMapResult.data || []);
     setIsLoading(false);

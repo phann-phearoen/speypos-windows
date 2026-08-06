@@ -253,9 +253,9 @@ test('shift report resolves cup sizes by canonical customization, item map, cate
   const report = getShiftSalesReport(shiftId);
 
   assert.deepEqual(report.cupSizeSummary, [
-    { id: null, name: 'Unknown', quantity: 5 },
-    { id: categoryCupId, name: '20 oz', quantity: 4 },
-    { id: itemCupId, name: '16 oz', quantity: 3 },
     { id: canonicalCupId, name: '12 oz', quantity: 2 },
+    { id: itemCupId, name: '16 oz', quantity: 3 },
+    { id: categoryCupId, name: '20 oz', quantity: 4 },
+    { id: null, name: 'Unknown', quantity: 5 },
   ]);
 });

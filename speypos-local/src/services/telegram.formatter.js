@@ -55,7 +55,17 @@ function formatCupSizeSummary(summary, localization) {
   }
 
   let message = `${localization.cup_size_summary}\n`;
-  for (const cupSize of summary) {
+  const sortedSummary = [...summary].sort((left, right) => {
+    if (!left.id || !right.id) {
+      return !left.id === !right.id ? 0 : !left.id ? 1 : -1;
+    }
+
+    const sizeDifference = Number.parseFloat(left.name) - Number.parseFloat(right.name);
+    return Number.isNaN(sizeDifference) || sizeDifference === 0
+      ? left.name.localeCompare(right.name)
+      : sizeDifference;
+  });
+  for (const cupSize of sortedSummary) {
     message += `${t(localization.cup_size_line, {
       name: cupSize.name,
       quantity: cupSize.quantity,

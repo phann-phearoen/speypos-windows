@@ -27,6 +27,7 @@ import type {
   MenuItemCategoryMap,
   ToppingGroup,
 } from '@/types/pos';
+import { sortCupSizes } from '@/lib/cupSizeSort';
 import { ImageUpload } from './ImageUpload';
 import { useTranslation } from '@/lib/i18n';
 
@@ -97,12 +98,7 @@ export function CategoryManagement() {
     if (categoryCustomizationRes.data) setCategoryCustomizationMappings(categoryCustomizationRes.data);
     if (categoryToppingRes.data) setCategoryToppingMappings(categoryToppingRes.data);
     if (cupSizesRes.data) {
-      const sortedCupSizes = [...cupSizesRes.data].sort((a, b) => {
-        const bySize = a.size.localeCompare(b.size);
-        if (bySize !== 0) return bySize;
-        return a.unit.localeCompare(b.unit);
-      });
-      setCupSizes(sortedCupSizes);
+      setCupSizes(sortCupSizes(cupSizesRes.data));
     }
     if (categoryCupSizeMappingsRes.data) setCategoryCupSizeMappings(categoryCupSizeMappingsRes.data);
     setIsLoading(false);

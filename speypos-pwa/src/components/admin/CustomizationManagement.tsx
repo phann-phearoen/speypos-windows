@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useCurrency } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
+import { sortCupSizes } from '@/lib/cupSizeSort';
 
 interface GroupFormData {
   name: string;
@@ -76,7 +77,7 @@ export function CustomizationManagement() {
 
     if (groupsRes.data) setGroups(groupsRes.data);
     if (optionsRes.data) setOptions(optionsRes.data);
-    setAvailableCupSizes(cupSizes || []);
+    setAvailableCupSizes(sortCupSizes(cupSizes || []));
     setIsLoading(false);
   };
 
@@ -85,7 +86,7 @@ export function CustomizationManagement() {
   }, []);
 
   useEffect(() => {
-    setAvailableCupSizes(cupSizes || []);
+    setAvailableCupSizes(sortCupSizes(cupSizes || []));
   }, [cupSizes]);
 
   const getGroupOptions = (groupId: string) => {
