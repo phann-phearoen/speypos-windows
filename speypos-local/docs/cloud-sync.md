@@ -20,6 +20,19 @@ Setting: cloud.sync (json)
   - Saving cloud.sync via settings PUT auto-runs POST /pos/handshake with X-Api-Key to resolve cloud store_id.
   - On handshake failure, the settings update is rejected (nothing is persisted).
   - Uploads require cloud.sync.store_id; if missing, sync aborts and retries later.
+  - The canonical ingestion store ID is `data.store.id`. It is persisted as `cloud.sync.store_id` and used in `/stores/:store_id/...` ingestion URLs.
+  - `data.store_client.id` identifies the POS client registration only. It must never be persisted as `cloud.sync.store_id` or used as an ingestion store ID.
+  - Backward-compatible canonical ID fields are `data.store_id` and `data.store_client.store_id`; a response with only `data.store_client.id` is invalid.
+  - Expected response shape:
+    ```json
+    {
+      "data": {
+        "store": { "id": 4 },
+        "store_client": { "id": 7, "name": "Client 2" }
+      }
+    }
+    ```
+    This response must persist `cloud.sync.store_id` as `"4"`, never `"7"`.
 - Manual upload:
   - POST /api/sync/orders with JSON { "shift_id": "<shift uuid>" } and header X-User-Role: admin
   - Enqueues a background flush job for the target shift and triggers processing asynchronously.

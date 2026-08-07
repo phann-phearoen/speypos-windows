@@ -107,15 +107,22 @@ export function buildOrderEvent(order, currencyCode) {
   };
 }
 
-async function postJson(url, body, apiKey) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+async function postJson(url, body, apiKey, operation) {
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    error.operation = operation;
+    error.url = url;
+    throw error;
+  }
 
   let json;
   try {
@@ -129,7 +136,14 @@ async function postJson(url, body, apiKey) {
   if (!response.ok) {
     const message = json?.errors?.[0]?.message || response.statusText;
     const code = json?.errors?.[0]?.code;
-    throw Object.assign(new Error(message), { code, requestId, status: response.status });
+    throw Object.assign(new Error(message), {
+      code,
+      requestId,
+      status: response.status,
+      operation,
+      url,
+      errorDetails: json?.errors?.[0]?.details,
+    });
   }
 
   return { json, requestId };
@@ -188,7 +202,8 @@ export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' 
           source,
         },
       },
-      apiKey
+      apiKey,
+      'create_event_batch'
     );
 
     const batchId = batchJson?.data?.event_batch?.id || batchJson?.data?.id;
@@ -200,7 +215,7 @@ export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' 
     for (const order of orders) {
       const event = buildOrderEvent(order, store?.currency);
       const eventUrl = `${baseUrl}/stores/${storeId}/event_batches/${batchId}/events`;
-      const { requestId } = await postJson(eventUrl, { event }, apiKey);
+      const { requestId } = await postJson(eventUrl, { event }, apiKey, 'append_order_event');
       lastRequestId = requestId || lastRequestId;
     }
 
@@ -210,6 +225,9 @@ export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' 
     const details = getErrorDetails(error);
     logger.error('Cloud sync failed.', {
       ...details,
+      operation: error.operation || null,
+      url: error.url || null,
+      cloudErrorDetails: error.errorDetails || null,
     });
     return { success: false, retryable: true, reason: 'upload_failed', requestId: error.requestId };
   }

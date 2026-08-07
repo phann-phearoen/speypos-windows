@@ -109,6 +109,9 @@ export async function upsertSetting(req, res) {
             code: error.code,
             status: error.status,
             requestId: error.requestId,
+            operation: error.operation || 'cloud_handshake',
+            url: error.url || null,
+            cloudErrorDetails: error.errorDetails || null,
           });
           return res.status(400).json({
             error: `Cloud handshake failed: ${error.message}`,

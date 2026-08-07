@@ -1,8 +1,19 @@
 import { logger } from '../utils/logger.js';
 
 function normalizeBaseUrl(baseUrl) {
-  if (!baseUrl || typeof baseUrl !== 'string') return 'https://speypos-cloud.ryong.net';
+  if (!baseUrl || typeof baseUrl !== 'string') return 'https://speypos-analytics-api.ryong.net';
   return baseUrl.replace(/\/+$/, '');
+}
+
+function selectCanonicalStoreIdentity(data) {
+  const candidates = [
+    ['data.store.id', data?.store?.id],
+    ['data.store_id', data?.store_id],
+    ['data.store_client.store_id', data?.store_client?.store_id],
+  ];
+
+  const [source, canonicalStoreId] = candidates.find(([, value]) => value !== null && value !== undefined) || [];
+  return { canonicalStoreId: canonicalStoreId || null, source: source || null };
 }
 
 /**
@@ -17,17 +28,22 @@ export async function performHandshake({ apiKey, baseUrl }) {
     throw new Error('Cloud handshake requires a non-empty api_key');
   }
 
-  logger.info('Cloud handshake starting.', { url: normalizedBaseUrl });
-
   let json = {};
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': apiKey,
-    },
-    body: JSON.stringify({}),
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    error.operation = 'cloud_handshake';
+    error.url = url;
+    throw error;
+  }
 
   try {
     json = await response.json();
@@ -36,7 +52,6 @@ export async function performHandshake({ apiKey, baseUrl }) {
   }
 
   const requestId = json?.meta?.request_id;
-
   if (!response.ok) {
     const message = json?.errors?.[0]?.message || response.statusText;
     const code = json?.errors?.[0]?.code;
@@ -44,16 +59,23 @@ export async function performHandshake({ apiKey, baseUrl }) {
     error.code = code;
     error.status = response.status;
     error.requestId = requestId;
+    error.operation = 'cloud_handshake';
+    error.url = url;
+    error.errorDetails = json?.errors?.[0]?.details;
     throw error;
   }
 
-  const storeClient = json?.data?.store_client || json?.data?.store || json?.data || {};
-  const storeId = storeClient?.id || json?.data?.store_id;
-  const storeIdString = typeof storeId === 'number' ? storeId.toString() : storeId;
+  const data = json?.data || {};
+  const storeClient = data.store_client || {};
+  const { canonicalStoreId, source: storeIdSource } = selectCanonicalStoreIdentity(data);
+  const storeIdString =
+    typeof canonicalStoreId === 'number' ? canonicalStoreId.toString() : canonicalStoreId;
 
   if (!storeIdString) {
     const error = new Error('Cloud handshake: missing store id in response');
     error.requestId = requestId;
+    error.operation = 'cloud_handshake';
+    error.url = url;
     throw error;
   }
 
@@ -65,6 +87,12 @@ export async function performHandshake({ apiKey, baseUrl }) {
     requestId,
   };
 
-  logger.info('Cloud handshake succeeded.', { storeId: storeIdString, requestId });
+  logger.info('Cloud handshake succeeded.', {
+    operation: 'cloud_handshake',
+    url,
+    selectedStoreId: storeIdString,
+    selectedStoreIdSource: storeIdSource,
+    requestId,
+  });
   return metadata;
 }
