@@ -5,7 +5,7 @@ export interface MenuCategory {
   name: string;
   image_url?: string;
   sort_order?: number;
-  cup_size_ids?: string[];
+  cup_size_id?: string | null;
 }
 
 export interface MenuItem {
@@ -14,7 +14,7 @@ export interface MenuItem {
   price: number;
   image_url?: string;
   category_ids?: string[];
-  cup_size_ids?: string[];
+  cup_size_id?: string | null;
 }
 
 export interface CupSize {

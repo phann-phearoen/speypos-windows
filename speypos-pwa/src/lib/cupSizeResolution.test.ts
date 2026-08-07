@@ -8,7 +8,7 @@ describe('resolveEffectiveCupSizesForItem', () => {
     { id: 'l', size: 'Large', unit: 'oz' },
   ];
 
-  it('falls back to category cup sizes when item has no direct mappings', () => {
+  it('falls back to the first matching category cup size when item has no direct assignment', () => {
     const result = resolveEffectiveCupSizesForItem({
       menuItemId: 'item-1',
       categoryIds: ['cat-1'],
@@ -20,7 +20,7 @@ describe('resolveEffectiveCupSizesForItem', () => {
       ],
     });
 
-    expect(result.map((item) => item.id)).toEqual(['m', 's']);
+    expect(result.map((item) => item.id)).toEqual(['s']);
   });
 
   it('uses only item cup sizes when item mappings exist', () => {
@@ -40,23 +40,22 @@ describe('resolveEffectiveCupSizesForItem', () => {
     expect(result.map((item) => item.id)).toEqual(['l']);
   });
 
-  it('deduplicates mapped cup sizes', () => {
+  it('uses category order to resolve a singular category fallback', () => {
     const result = resolveEffectiveCupSizesForItem({
       menuItemId: 'item-1',
-      categoryIds: ['cat-1', 'cat-2'],
+      categoryIds: ['cat-2', 'cat-1'],
       cupSizes,
       itemCupSizeMappings: [],
       categoryCupSizeMappings: [
         { id: 'cmap-1', menu_category_id: 'cat-1', cup_size_id: 'm' },
-        { id: 'cmap-2', menu_category_id: 'cat-2', cup_size_id: 'm' },
-        { id: 'cmap-3', menu_category_id: 'cat-2', cup_size_id: 'l' },
+        { id: 'cmap-2', menu_category_id: 'cat-2', cup_size_id: 'l' },
       ],
     });
 
-    expect(result.map((item) => item.id)).toEqual(['l', 'm']);
+    expect(result.map((item) => item.id)).toEqual(['l']);
   });
 
-  it('sorts numeric cup sizes by their size value', () => {
+  it('returns an empty list when no cup-size assignment exists', () => {
     const result = resolveEffectiveCupSizesForItem({
       menuItemId: 'item-1',
       categoryIds: ['cat-1'],
@@ -67,14 +66,9 @@ describe('resolveEffectiveCupSizesForItem', () => {
         { id: '20', size: '20', unit: 'oz' },
       ],
       itemCupSizeMappings: [],
-      categoryCupSizeMappings: [
-        { id: 'map-32', menu_category_id: 'cat-1', cup_size_id: '32' },
-        { id: 'map-18', menu_category_id: 'cat-1', cup_size_id: '18' },
-        { id: 'map-22', menu_category_id: 'cat-1', cup_size_id: '22' },
-        { id: 'map-20', menu_category_id: 'cat-1', cup_size_id: '20' },
-      ],
+      categoryCupSizeMappings: [],
     });
 
-    expect(result.map((item) => item.id)).toEqual(['18', '20', '22', '32']);
+    expect(result).toEqual([]);
   });
 });

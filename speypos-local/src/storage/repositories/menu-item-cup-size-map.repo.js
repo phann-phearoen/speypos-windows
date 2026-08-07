@@ -4,10 +4,27 @@ import { getDb } from '../database.js';
 export function createMap(mapData) {
   const db = getDb();
   const { menu_item_id, cup_size_id } = mapData;
-  const id = randomUUID();
-  const stmt = db.prepare('INSERT INTO MenuItemCupSizeMap (id, menu_item_id, cup_size_id) VALUES (?, ?, ?)');
-  stmt.run(id, menu_item_id, cup_size_id);
-  return db.prepare('SELECT * FROM MenuItemCupSizeMap WHERE id = ?').get(id);
+  const replaceMap = db.transaction(() => {
+    const existing = db
+      .prepare('SELECT * FROM MenuItemCupSizeMap WHERE menu_item_id = ?')
+      .get(menu_item_id);
+
+    if (existing?.cup_size_id === cup_size_id) {
+      return existing;
+    }
+
+    db.prepare('DELETE FROM MenuItemCupSizeMap WHERE menu_item_id = ?').run(menu_item_id);
+
+    const id = randomUUID();
+    db.prepare('INSERT INTO MenuItemCupSizeMap (id, menu_item_id, cup_size_id) VALUES (?, ?, ?)').run(
+      id,
+      menu_item_id,
+      cup_size_id
+    );
+    return db.prepare('SELECT * FROM MenuItemCupSizeMap WHERE id = ?').get(id);
+  });
+
+  return replaceMap();
 }
 
 export function remove(id) {

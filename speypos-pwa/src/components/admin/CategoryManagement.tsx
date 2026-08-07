@@ -59,7 +59,7 @@ export function CategoryManagement() {
 
   const [selectedCustomizationGroupIds, setSelectedCustomizationGroupIds] = useState<string[]>([]);
   const [selectedToppingGroupIds, setSelectedToppingGroupIds] = useState<string[]>([]);
-  const [selectedCupSizeIds, setSelectedCupSizeIds] = useState<string[]>([]);
+  const [selectedCupSizeId, setSelectedCupSizeId] = useState<string | null>(null);
   const [newCupSizeSize, setNewCupSizeSize] = useState('');
   const [newCupSizeUnit, setNewCupSizeUnit] = useState('');
   const [isCreatingCupSize, setIsCreatingCupSize] = useState(false);
@@ -133,7 +133,7 @@ export function CategoryManagement() {
     setFormData(initialFormData);
     setSelectedCustomizationGroupIds([]);
     setSelectedToppingGroupIds([]);
-    setSelectedCupSizeIds([]);
+    setSelectedCupSizeId(null);
     setIsFormOpen(true);
   };
 
@@ -155,10 +155,10 @@ export function CategoryManagement() {
       .map((m) => m.topping_group_id);
     setSelectedToppingGroupIds(existingToppingGroupIds);
 
-    const existingCupSizeIds = categoryCupSizeMappings
+    const existingCupSizeId = categoryCupSizeMappings
       .filter((m) => m.menu_category_id === category.id)
-      .map((m) => m.cup_size_id);
-    setSelectedCupSizeIds(existingCupSizeIds);
+      .at(0)?.cup_size_id || null;
+    setSelectedCupSizeId(existingCupSizeId);
 
     setIsFormOpen(true);
   };
@@ -218,12 +218,6 @@ export function CategoryManagement() {
 
         // Sync category ↔ cup-size mappings
         const existingCupMappings = categoryCupSizeMappings.filter((m) => m.menu_category_id === categoryId);
-        const existingCupSizeIds = new Set(existingCupMappings.map((m) => m.cup_size_id));
-        const nextCupSizeIds = new Set(selectedCupSizeIds);
-
-        const cupSizesToCreate = Array.from(nextCupSizeIds).filter((cupSizeId) => !existingCupSizeIds.has(cupSizeId));
-        const cupSizesToDelete = existingCupMappings.filter((m) => !nextCupSizeIds.has(m.cup_size_id));
-
         await Promise.all([
           ...toCreate.map((customization_group_id) =>
             menuCategoryCustomizationGroupApi.create({ menu_category_id: categoryId, customization_group_id })
@@ -233,11 +227,17 @@ export function CategoryManagement() {
             menuCategoryToppingGroupApi.create({ menu_category_id: categoryId, topping_group_id })
           ),
           ...toppingsToDelete.map((m) => menuCategoryToppingGroupApi.delete(m.id)),
-          ...cupSizesToCreate.map((cup_size_id) =>
-            menuCategoryCupSizeMapApi.create({ menu_category_id: categoryId, cup_size_id })
-          ),
-          ...cupSizesToDelete.map((m) => menuCategoryCupSizeMapApi.delete(m.id)),
         ]);
+
+        const currentCupSizeId = existingCupMappings[0]?.cup_size_id || null;
+        if (!selectedCupSizeId) {
+          await Promise.all(existingCupMappings.map((mapping) => menuCategoryCupSizeMapApi.delete(mapping.id)));
+        } else if (currentCupSizeId !== selectedCupSizeId) {
+          await menuCategoryCupSizeMapApi.create({
+            menu_category_id: categoryId,
+            cup_size_id: selectedCupSizeId,
+          });
+        }
       }
 
       setIsFormOpen(false);
@@ -482,7 +482,7 @@ export function CategoryManagement() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Cup Size Defaults</label>
-                <span className="text-xs text-muted-foreground">{selectedCupSizeIds.length}</span>
+                <span className="text-xs text-muted-foreground">{selectedCupSizeId ? 1 : 0}</span>
               </div>
               <p className="text-xs text-muted-foreground">These cup sizes are used when item-level cup sizes are not set.</p>
 
@@ -514,8 +514,18 @@ export function CategoryManagement() {
               ) : (
                 <div className="max-h-48 overflow-auto rounded-md border bg-background">
                   <div className="divide-y">
+                    <label className="flex items-center justify-between gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-muted/40">
+                      <span className="text-foreground">None</span>
+                      <input
+                        type="radio"
+                        name="category-cup-size"
+                        className="h-4 w-4"
+                        checked={selectedCupSizeId === null}
+                        onChange={() => setSelectedCupSizeId(null)}
+                      />
+                    </label>
                     {cupSizes.map((cupSize) => {
-                      const checked = selectedCupSizeIds.includes(cupSize.id);
+                      const checked = selectedCupSizeId === cupSize.id;
                       return (
                         <label
                           key={cupSize.id}
@@ -523,15 +533,11 @@ export function CategoryManagement() {
                         >
                           <span className="text-foreground">{`${cupSize.size} (${cupSize.unit})`}</span>
                           <input
-                            type="checkbox"
+                            type="radio"
+                            name="category-cup-size"
                             className="h-4 w-4"
                             checked={checked}
-                            onChange={(e) => {
-                              setSelectedCupSizeIds((prev) => {
-                                if (e.target.checked) return Array.from(new Set([...prev, cupSize.id]));
-                                return prev.filter((id) => id !== cupSize.id);
-                              });
-                            }}
+                            onChange={() => setSelectedCupSizeId(cupSize.id)}
                           />
                         </label>
                       );

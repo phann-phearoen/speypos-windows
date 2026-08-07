@@ -60,8 +60,8 @@ export function deleteMenuCategoryCupSizeMap(id) {
 
 export function getEffectiveCupSizeIdsForItem(menuItemId, menuCategoryIds = []) {
   const itemMappings = menuItemCupSizeMapRepo.getMaps({ menu_item_id: menuItemId });
-  if (itemMappings.length > 0) {
-    return Array.from(new Set(itemMappings.map((map) => map.cup_size_id)));
+  if (itemMappings[0]) {
+    return [itemMappings[0].cup_size_id];
   }
 
   if (!Array.isArray(menuCategoryIds) || menuCategoryIds.length === 0) {
@@ -69,5 +69,12 @@ export function getEffectiveCupSizeIdsForItem(menuItemId, menuCategoryIds = []) 
   }
 
   const categoryMappings = menuCategoryCupSizeMapRepo.getMappingsByCategoryIds(menuCategoryIds);
-  return Array.from(new Set(categoryMappings.map((map) => map.cup_size_id)));
+  for (const categoryId of menuCategoryIds) {
+    const mapping = categoryMappings.find((candidate) => candidate.menu_category_id === categoryId);
+    if (mapping) {
+      return [mapping.cup_size_id];
+    }
+  }
+
+  return [];
 }

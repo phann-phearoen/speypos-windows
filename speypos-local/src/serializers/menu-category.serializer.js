@@ -40,7 +40,7 @@ export function serializeCategory(category) {
     ...category,
     customization_groups,
     topping_groups,
-    cup_size_ids: cupSizeIds,
+    cup_size_id: cupSizeIds[0] || null,
   };
 }
 

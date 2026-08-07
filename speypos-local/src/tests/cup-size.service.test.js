@@ -57,7 +57,7 @@ test('creates and lists cup sizes', () => {
   assert.equal(all[0].id, created.id);
 });
 
-test('category cup sizes apply when item has no item-level mapping', () => {
+test('category cup size applies when item has no item-level mapping', () => {
   const category = createMenuCategory({
     id: 'cat-1',
     name: 'Coffee',
@@ -81,7 +81,8 @@ test('category cup sizes apply when item has no item-level mapping', () => {
   cupSizeService.createMenuCategoryCupSizeMap({ menu_category_id: category.id, cup_size_id: medium.id });
 
   const effective = cupSizeService.getEffectiveCupSizeIdsForItem(item.id, [category.id]);
-  assert.deepEqual(new Set(effective), new Set([small.id, medium.id]));
+  assert.deepEqual(effective, [medium.id]);
+  assert.equal(cupSizeService.getMenuCategoryCupSizeMaps({ menu_category_id: category.id }).length, 1);
 });
 
 test('item cup sizes override category cup sizes when present', () => {
@@ -109,4 +110,22 @@ test('item cup sizes override category cup sizes when present', () => {
 
   const effective = cupSizeService.getEffectiveCupSizeIdsForItem(item.id, [category.id]);
   assert.deepEqual(effective, [large.id]);
+});
+
+test('item cup-size assignment replaces the previous assignment', () => {
+  const item = createMenuItem({
+    id: 'item-1',
+    name: 'Latte',
+    image_url: null,
+    price: 300,
+    created_at: Date.now(),
+  });
+  const small = cupSizeService.createCupSize({ size: 'Small', unit: 'oz' });
+  const large = cupSizeService.createCupSize({ size: 'Large', unit: 'oz' });
+
+  cupSizeService.createMenuItemCupSizeMap({ menu_item_id: item.id, cup_size_id: small.id });
+  cupSizeService.createMenuItemCupSizeMap({ menu_item_id: item.id, cup_size_id: large.id });
+
+  const mappings = cupSizeService.getMenuItemCupSizeMaps({ menu_item_id: item.id });
+  assert.deepEqual(mappings.map((mapping) => mapping.cup_size_id), [large.id]);
 });

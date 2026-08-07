@@ -22,7 +22,7 @@ interface MenuItemFormData {
   category_ids: string[];
   customization_group_ids: string[];
   topping_group_ids: string[];
-  cup_size_ids: string[];
+  cup_size_id: string | null;
 }
 
 const initialFormData: MenuItemFormData = {
@@ -32,7 +32,7 @@ const initialFormData: MenuItemFormData = {
   category_ids: [],
   customization_group_ids: [],
   topping_group_ids: [],
-  cup_size_ids: [],
+  cup_size_id: null,
 };
 
 export function MenuItemManagement() {
@@ -129,9 +129,9 @@ export function MenuItemManagement() {
     return toppingGroups.filter(g => itemMappings.some(m => m.topping_group_id === g.id));
   };
 
-  const getItemCupSizes = (itemId: string) => {
-    const itemMappings = itemCupSizeMappings.filter(m => m.menu_item_id === itemId);
-    return cupSizes.filter((size) => itemMappings.some((mapping) => mapping.cup_size_id === size.id));
+  const getItemCupSize = (itemId: string) => {
+    const itemMapping = itemCupSizeMappings.find((mapping) => mapping.menu_item_id === itemId);
+    return cupSizes.find((cupSize) => cupSize.id === itemMapping?.cup_size_id) || null;
   };
 
   // Filter items by selected category
@@ -169,7 +169,7 @@ export function MenuItemManagement() {
       category_ids: itemCategoryMappings.map(m => m.menu_category_id),
       customization_group_ids: itemCustomMappings.map(m => m.customization_group_id),
       topping_group_ids: itemToppingMappings.map(m => m.topping_group_id),
-      cup_size_ids: itemSizeMappings.map(m => m.cup_size_id),
+      cup_size_id: itemSizeMappings[0]?.cup_size_id || null,
     });
     setIsFormOpen(true);
   };
@@ -206,12 +206,10 @@ export function MenuItemManagement() {
     }));
   };
 
-  const handleCupSizeToggle = (cupSizeId: string) => {
+  const handleCupSizeSelect = (cupSizeId: string | null) => {
     setFormData((prev) => ({
       ...prev,
-      cup_size_ids: prev.cup_size_ids.includes(cupSizeId)
-        ? prev.cup_size_ids.filter((id) => id !== cupSizeId)
-        : [...prev.cup_size_ids, cupSizeId],
+      cup_size_id: cupSizeId,
     }));
   };
 
@@ -342,21 +340,14 @@ export function MenuItemManagement() {
 
         // Update cup size mappings
         const currentSizeMappings = itemCupSizeMappings.filter((m) => m.menu_item_id === itemId);
-        const currentSizeIds = currentSizeMappings.map((m) => m.cup_size_id);
-
-        for (const mapping of currentSizeMappings) {
-          if (!formData.cup_size_ids.includes(mapping.cup_size_id)) {
-            await menuItemCupSizeMapApi.delete(mapping.id);
-          }
-        }
-
-        for (const cupSizeId of formData.cup_size_ids) {
-          if (!currentSizeIds.includes(cupSizeId)) {
-            await menuItemCupSizeMapApi.create({
-              menu_item_id: itemId,
-              cup_size_id: cupSizeId,
-            });
-          }
+        const currentCupSizeId = currentSizeMappings[0]?.cup_size_id || null;
+        if (!formData.cup_size_id) {
+          await Promise.all(currentSizeMappings.map((mapping) => menuItemCupSizeMapApi.delete(mapping.id)));
+        } else if (currentCupSizeId !== formData.cup_size_id) {
+          await menuItemCupSizeMapApi.create({
+            menu_item_id: itemId,
+            cup_size_id: formData.cup_size_id,
+          });
         }
       }
 
@@ -420,11 +411,11 @@ export function MenuItemManagement() {
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
-          {getItemCupSizes(item.id).map((cupSize) => (
-            <Badge key={cupSize.id} variant="outline" className="text-xs bg-amber-100 text-amber-900 border-amber-300">
-              {`${cupSize.size} (${cupSize.unit})`}
+          {getItemCupSize(item.id) && (
+            <Badge variant="outline" className="text-xs bg-amber-100 text-amber-900 border-amber-300">
+              {`${getItemCupSize(item.id)?.size} (${getItemCupSize(item.id)?.unit})`}
             </Badge>
-          ))}
+          )}
           {getItemCustomizationGroups(item.id).map((group) => (
             <Badge key={group.id} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
               {group.name}
@@ -631,11 +622,22 @@ export function MenuItemManagement() {
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer col-span-2">
+                  <input
+                    type="radio"
+                    name="menu-item-cup-size"
+                    checked={formData.cup_size_id === null}
+                    onChange={() => handleCupSizeSelect(null)}
+                  />
+                  <span className="text-sm">None</span>
+                </label>
                 {cupSizes.map((cupSize) => (
                   <label key={cupSize.id} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={formData.cup_size_ids.includes(cupSize.id)}
-                      onCheckedChange={() => handleCupSizeToggle(cupSize.id)}
+                    <input
+                      type="radio"
+                      name="menu-item-cup-size"
+                      checked={formData.cup_size_id === cupSize.id}
+                      onChange={() => handleCupSizeSelect(cupSize.id)}
                     />
                     <span className="text-sm">{`${cupSize.size} (${cupSize.unit})`}</span>
                   </label>

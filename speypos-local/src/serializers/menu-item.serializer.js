@@ -27,17 +27,14 @@ export function serializeManyMenuItems(menuItems) {
 
   const cupSizeMap = {};
   for (const mapping of cupSizeMappings) {
-    if (!cupSizeMap[mapping.menu_item_id]) {
-      cupSizeMap[mapping.menu_item_id] = [];
-    }
-    cupSizeMap[mapping.menu_item_id].push(mapping.cup_size_id);
+    cupSizeMap[mapping.menu_item_id] = mapping.cup_size_id;
   }
 
   // Attach the category_ids to each menu item
   return menuItems.map(item => ({
     ...item,
     category_ids: categoryMap[item.id] || [],
-    cup_size_ids: cupSizeMap[item.id] || [],
+    cup_size_id: cupSizeMap[item.id] || null,
   }));
 }
 
