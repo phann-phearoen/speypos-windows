@@ -460,7 +460,7 @@ const translations: Record<string, TranslationDictionary> = {
     'admin.settings.cloudSyncApiKeyRequired': 'API Key is required when enabled',
     'admin.settings.cloudSyncBaseUrlRequired': 'Base URL is required when enabled',
     'admin.orderHistory.syncOrders': 'Sync Orders',
-    'admin.orderHistory.syncSuccess': 'Orders synced successfully',
+    'admin.orderHistory.syncSuccess': 'Orders queued for cloud sync',
     'admin.orderHistory.syncFailed': 'Failed to sync orders',
     'admin.orderHistory.syncing': 'Syncing...',
 
@@ -938,7 +938,7 @@ const translations: Record<string, TranslationDictionary> = {
     'admin.settings.cloudSyncApiKeyRequired': 'សោ API ត្រូវបានទាមទារនៅពេលបើក',
     'admin.settings.cloudSyncBaseUrlRequired': 'URL មូលដ្ឋានត្រូវបានទាមទារនៅពេលបើក',
     'admin.orderHistory.syncOrders': 'ធ្វើសមកាលកម្មការកម្មង់',
-    'admin.orderHistory.syncSuccess': 'បានធ្វើសមកាលកម្មការកម្មង់ដោយជោគជ័យ',
+    'admin.orderHistory.syncSuccess': 'បានដាក់ការកម្មង់ក្នុងជួរធ្វើសមកាលកម្មពពក',
     'admin.orderHistory.syncFailed': 'ការធ្វើសមកាលកម្មការកម្មង់បានបរាជ័យ',
     'admin.orderHistory.syncing': 'កំពុងធ្វើសមកាលកម្ម...',
 

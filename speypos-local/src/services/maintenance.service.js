@@ -4,7 +4,7 @@ import * as settingsService from './settings.service.js';
 import * as orderRepo from '../storage/repositories/order.repo.js';
 import * as shiftRepo from '../storage/repositories/shift.repo.js';
 import { serializeOrder } from '../serializers/order.serializer.js';
-import { uploadOrdersBatch } from './cloudIngest.service.js';
+import { CLOUD_EVENT_BATCH_SOURCE, uploadOrdersBatch } from './cloudIngest.service.js';
 import fs from 'fs';
 import path from 'path';
 import { paths } from '../config/paths.js';
@@ -97,7 +97,7 @@ async function performFinalSyncAttempt(cutoffDate) {
       const result = await uploadOrdersBatch({
         shift,
         orders: serializedOrders,
-        source: 'maintenance_purge'
+        source: CLOUD_EVENT_BATCH_SOURCE.DAY_CLOSE,
       });
 
       if (result.success) {

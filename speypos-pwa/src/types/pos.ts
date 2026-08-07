@@ -139,6 +139,7 @@ export interface Order {
   total_items?: number; // API returns total item count
   status: 'pending' | 'completed' | 'cancelled' | 'voided';
   created_at?: number; // Unix timestamp in milliseconds
+  cloud_sync_at?: string | null;
   void_reason?: 'mistake' | 'staff_consumption' | 'other';
   void_note?: string;
   voided_at?: number;

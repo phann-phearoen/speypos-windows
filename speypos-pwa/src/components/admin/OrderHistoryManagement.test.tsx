@@ -84,6 +84,10 @@ beforeEach(() => {
         'admin.orderHistory.shiftsOn': 'Shifts on',
         'admin.orderHistory.ongoing': 'ongoing',
         'admin.orderHistory.outdated': 'From Previous Day',
+        'admin.orderHistory.syncOrders': 'Sync Orders',
+        'admin.orderHistory.syncing': 'Syncing...',
+        'admin.orderHistory.syncSuccess': 'Orders queued for cloud sync',
+        'admin.orderHistory.syncFailed': 'Failed to sync orders',
         'common.loading': 'Loading',
         'common.unknown': 'Unknown',
         'toast.success': 'Success',
@@ -224,4 +228,78 @@ test('admin close shift treats stale business-day message without errorCode as a
   await waitFor(() => {
     expect(screen.queryByRole('button', { name: /close shift/i })).not.toBeInTheDocument();
   });
+});
+
+test('manual sync is enabled for an open shift with unsynced finalized orders', async () => {
+  mocks.mockGetOpenShifts.mockResolvedValue({ data: [], error: null });
+  mocks.mockGetShiftsByDate.mockResolvedValue({
+    data: [
+      {
+        id: 'shift-1',
+        staff_id: 'staff-1',
+        started_at: 1,
+        date: '2026-07-27',
+        status: 'open',
+      },
+    ],
+    error: null,
+  });
+  mocks.mockGetOrdersByShift.mockResolvedValue({
+    data: [
+      {
+        id: 'order-1',
+        shift_id: 'shift-1',
+        staff_id: 'staff-1',
+        items: [],
+        total: 100,
+        status: 'completed',
+        cloud_sync_at: null,
+      },
+    ],
+    error: null,
+  });
+
+  render(<OrderHistoryManagement />);
+
+  const button = await screen.findByRole('button', { name: /sync orders/i });
+  expect(button).toBeEnabled();
+  fireEvent.click(button);
+
+  await waitFor(() => {
+    expect(mocks.mockSyncOrders).toHaveBeenCalledWith('shift-1');
+  });
+});
+
+test('manual sync is disabled when all finalized orders are already synced', async () => {
+  mocks.mockGetOpenShifts.mockResolvedValue({ data: [], error: null });
+  mocks.mockGetShiftsByDate.mockResolvedValue({
+    data: [
+      {
+        id: 'shift-1',
+        staff_id: 'staff-1',
+        started_at: 1,
+        date: '2026-07-27',
+        status: 'closed',
+      },
+    ],
+    error: null,
+  });
+  mocks.mockGetOrdersByShift.mockResolvedValue({
+    data: [
+      {
+        id: 'order-1',
+        shift_id: 'shift-1',
+        staff_id: 'staff-1',
+        items: [],
+        total: 100,
+        status: 'completed',
+        cloud_sync_at: '2026-08-07T00:00:00.000Z',
+      },
+    ],
+    error: null,
+  });
+
+  render(<OrderHistoryManagement />);
+
+  expect(await screen.findByRole('button', { name: /sync orders/i })).toBeDisabled();
 });

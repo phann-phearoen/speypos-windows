@@ -5,7 +5,7 @@ import { readQueue, writeQueue } from './queue.js';
 import * as orderRepo from '../storage/repositories/order.repo.js';
 import * as shiftRepo from '../storage/repositories/shift.repo.js';
 import { serializeOrder } from '../serializers/order.serializer.js';
-import { uploadOrdersBatch } from '../services/cloudIngest.service.js';
+import { CLOUD_EVENT_BATCH_SOURCE, uploadOrdersBatch } from '../services/cloudIngest.service.js';
 
 const JOB_TYPES = {
   ORDERS_SHIFT_MINI_BATCH: 'orders_shift_mini_batch',
@@ -161,7 +161,11 @@ async function handleMiniBatchJob(job) {
   }
 
   const serializedOrders = orders.map((order) => serializeOrder(order)).filter(Boolean);
-  const result = await uploadOrdersBatch({ shift, orders: serializedOrders, source: 'manual' });
+  const result = await uploadOrdersBatch({
+    shift,
+    orders: serializedOrders,
+    source: CLOUD_EVENT_BATCH_SOURCE.MANUAL,
+  });
 
   if (result.success) {
     orderRepo.markOrdersSynced(serializedOrders.map((o) => o.id));
@@ -174,11 +178,6 @@ async function handleFlushJob(job) {
   const shift = shiftRepo.getShiftById(job.shiftId);
   if (!shift) {
     logger.warn(`Shift ${job.shiftId} not found; dropping flush cloud sync job.`);
-    return { success: true, skipped: true };
-  }
-
-  if (!shiftRepo.isShiftClosed(job.shiftId)) {
-    logger.warn(`Skipping flush sync for shift ${job.shiftId}: shift is not closed.`);
     return { success: true, skipped: true };
   }
 
@@ -195,7 +194,9 @@ async function handleFlushJob(job) {
     const result = await uploadOrdersBatch({
       shift,
       orders: serializedOrders,
-      source: 'shift_close',
+      source: shiftRepo.isShiftClosed(job.shiftId)
+        ? CLOUD_EVENT_BATCH_SOURCE.SHIFT_CLOSE
+        : CLOUD_EVENT_BATCH_SOURCE.MANUAL,
     });
 
     if (!result.success) {

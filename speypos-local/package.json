@@ -19,6 +19,7 @@
     "test:outbox-dispatchers": "node --test src/tests/outbox-dispatchers.test.js",
     "test:payment-outbox": "node --test src/tests/order-payment-outbox.test.js",
     "test:cloud-handshake": "node --test src/tests/cloudHandshake.service.test.js",
+    "test:cloud-ingest-contract": "node --test src/tests/cloud-ingest-contract.test.js",
     "dev": "nodemon src/index.js",
     "db:dump": "node data/seed-scripts/dump.js",
     "db:seed": "node data/seed-scripts/seed.js",

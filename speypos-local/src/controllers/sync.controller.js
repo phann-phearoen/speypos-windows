@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import { enqueueFlushForShift, processSyncQueue } from '../sync/syncManager.js';
 import * as shiftRepo from '../storage/repositories/shift.repo.js';
+import * as orderRepo from '../storage/repositories/order.repo.js';
 
 /**
  * Manually enqueue a cloud sync job for a given shift.
@@ -18,11 +19,19 @@ export async function manualSyncShift(req, res) {
       return res.status(404).json({ error: `Shift with ID ${shiftId} not found` });
     }
 
+    const unsyncedCount = orderRepo.countFinalizedUnsyncedByShift(shiftId);
+    if (unsyncedCount === 0) {
+      return res.status(409).json({
+        error: `Shift with ID ${shiftId} has no unsynced finalized orders`,
+        code: 'NO_UNSYNCED_ORDERS',
+      });
+    }
+
     const { enqueued, reason } = await enqueueFlushForShift(shiftId);
     // Trigger processing immediately but do not block response
     process.nextTick(processSyncQueue);
 
-    return res.status(enqueued ? 202 : 200).json({ enqueued, reason });
+    return res.status(enqueued ? 202 : 200).json({ enqueued, reason, unsynced_count: unsyncedCount });
   } catch (error) {
     logger.error('Failed to enqueue manual cloud sync', { error: error.message });
     return res.status(500).json({ error: 'Internal Server Error' });

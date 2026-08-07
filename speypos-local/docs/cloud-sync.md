@@ -11,7 +11,8 @@ Setting: cloud.sync (json)
 - store_client_name: string|null (from handshake)
 - store_last_seen_at: string|null (from handshake)
 - Workflow:
-  - During an active shift, finalized orders are uploaded in background mini-batches when unsynced count reaches SYNC_MINI_BATCH_SIZE (from .env, default 20).
+  - During an active shift, finalized orders are uploaded in background mini-batches when unsynced count reaches SYNC_MINI_BATCH_SIZE (from .env, default 20). This setting controls both the threshold and the maximum orders sent in each Cloud request.
+  - outbox.config.batch_size controls worker event-claim throughput only; it does not control Cloud ingestion batch sizing.
   - Mini-batch processing is guarded to the currently active shift only.
   - Closing a shift enqueues a background flush job that drains remaining finalized unsynced orders in mini-batch chunks.
   - Only orders (items, customizations, toppings, payments) are sent.
@@ -41,3 +42,4 @@ Setting: cloud.sync (json)
   - Processing restarts at service start.
 - External contract:
   - Uses docs/pos-client-link.yml event batch + events with ORDER_CREATED payloads including order structure.
+  - Event-batch source values are restricted to `shift_close`, `day_close`, and `manual`. Internal workflow names such as `outbox` or `maintenance_purge` must never be sent to Cloud.

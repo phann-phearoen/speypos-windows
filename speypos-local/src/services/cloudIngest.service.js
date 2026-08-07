@@ -8,6 +8,24 @@ const currencyMetadata = {
   KHR: { minorUnit: 0 },
 };
 
+export const CLOUD_EVENT_BATCH_SOURCE = Object.freeze({
+  SHIFT_CLOSE: 'shift_close',
+  DAY_CLOSE: 'day_close',
+  MANUAL: 'manual',
+});
+
+const validEventBatchSources = new Set(Object.values(CLOUD_EVENT_BATCH_SOURCE));
+
+export function assertCloudEventBatchSource(source) {
+  if (validEventBatchSources.has(source)) {
+    return;
+  }
+
+  const error = new Error(`Cloud sync: unsupported event batch source: ${source}`);
+  error.code = 'invalid_event_batch_source';
+  throw error;
+}
+
 function toIso(timestamp) {
   if (!timestamp) {
     return new Date().toISOString();
@@ -160,7 +178,11 @@ function getConfig() {
   return { enabled, apiKey, baseUrl, storeId, store };
 }
 
-export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' }) {
+export async function uploadOrdersBatch({
+  shift,
+  orders,
+  source = CLOUD_EVENT_BATCH_SOURCE.SHIFT_CLOSE,
+}) {
   const { enabled, apiKey, baseUrl, storeId, store } = getConfig();
 
   if (!enabled) {
@@ -190,9 +212,12 @@ export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' 
     orderCount: orders.length,
     baseUrl,
     storeId,
+    source,
   });
 
   try {
+    assertCloudEventBatchSource(source);
+
     const batchUrl = `${baseUrl}/stores/${storeId}/event_batches`;
     const { json: batchJson, requestId: batchRequestId } = await postJson(
       batchUrl,
@@ -228,6 +253,7 @@ export async function uploadOrdersBatch({ shift, orders, source = 'shift_close' 
       operation: error.operation || null,
       url: error.url || null,
       cloudErrorDetails: error.errorDetails || null,
+      source,
     });
     return { success: false, retryable: true, reason: 'upload_failed', requestId: error.requestId };
   }

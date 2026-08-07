@@ -1,13 +1,13 @@
 import { logger } from '../utils/logger.js';
+import { env } from '../config/env.js';
 import * as orderRepo from '../storage/repositories/order.repo.js';
 import * as shiftRepo from '../storage/repositories/shift.repo.js';
 import * as businessDayRepo from '../storage/repositories/business-day.repo.js';
 import { serializeOrder } from '../serializers/order.serializer.js';
 import { printReceipt } from '../printer/printerService.js';
 import { sendOrderNotification, sendShiftCloseNotification } from './telegram.service.js';
-import { uploadOrdersBatch } from './cloudIngest.service.js';
+import { CLOUD_EVENT_BATCH_SOURCE, uploadOrdersBatch } from './cloudIngest.service.js';
 import { ORDER_STATUS } from '../constants/order.constants.js';
-import { getOutboxConfig } from './settings.service.js';
 
 export function isOutboxRetryAttempt(event) {
   return Number(event?.attempts || 0) > 1;
@@ -80,7 +80,6 @@ async function dispatchShiftTelegram(event) {
 }
 
 async function dispatchCloudMiniBatch(event) {
-  const config = getOutboxConfig();
   const shift = getShiftOrThrow(event.payload.shift_id);
 
   if (shift.status !== 'open') {
@@ -88,19 +87,24 @@ async function dispatchCloudMiniBatch(event) {
     return;
   }
 
-  if (!config || !Number.isInteger(config.batch_size)) {
-    throw new Error('Outbox config missing batch size');
-  }
-
   const unsyncedCount = orderRepo.countFinalizedUnsyncedByShift(shift.id);
-  if (unsyncedCount < config.batch_size) {
-    logger.info(`Skipping cloud mini-batch for shift ${shift.id}; below threshold.`);
+  if (unsyncedCount < env.syncMiniBatchSize) {
+    logger.info(`Skipping cloud mini-batch for shift ${shift.id}; below threshold.`, {
+      unsyncedCount,
+      miniBatchSize: env.syncMiniBatchSize,
+    });
     return;
   }
 
-  const orders = orderRepo.getFinalizedUnsyncedByShift(shift.id, { limit: config.batch_size });
+  const orders = orderRepo.getFinalizedUnsyncedByShift(shift.id, {
+    limit: env.syncMiniBatchSize,
+  });
   const serializedOrders = orders.map((order) => serializeOrder(order)).filter(Boolean);
-  const result = await uploadOrdersBatch({ shift, orders: serializedOrders, source: 'outbox' });
+  const result = await uploadOrdersBatch({
+    shift,
+    orders: serializedOrders,
+    source: CLOUD_EVENT_BATCH_SOURCE.MANUAL,
+  });
 
   if (!result.success) {
     throw new Error(result.reason || 'Cloud mini-batch upload failed');
@@ -116,11 +120,6 @@ async function dispatchCloudFlush(event) {
   }
 
   const shift = getShiftOrThrow(event.payload.shift_id);
-  const config = getOutboxConfig();
-
-  if (!config || !Number.isInteger(config.batch_size)) {
-    throw new Error('Outbox config missing batch size');
-  }
 
   if (shift.status !== 'closed') {
     logger.info(`Skipping cloud flush for shift ${shift.id} because it is not closed.`);
@@ -128,13 +127,19 @@ async function dispatchCloudFlush(event) {
   }
 
   while (true) {
-    const orders = orderRepo.getFinalizedUnsyncedByShift(shift.id, { limit: config.batch_size });
+    const orders = orderRepo.getFinalizedUnsyncedByShift(shift.id, {
+      limit: env.syncMiniBatchSize,
+    });
     if (!orders.length) {
       return;
     }
 
     const serializedOrders = orders.map((order) => serializeOrder(order)).filter(Boolean);
-    const result = await uploadOrdersBatch({ shift, orders: serializedOrders, source: 'outbox' });
+    const result = await uploadOrdersBatch({
+      shift,
+      orders: serializedOrders,
+      source: CLOUD_EVENT_BATCH_SOURCE.SHIFT_CLOSE,
+    });
 
     if (!result.success) {
       throw new Error(result.reason || 'Cloud flush upload failed');

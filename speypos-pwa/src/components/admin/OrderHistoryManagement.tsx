@@ -81,6 +81,7 @@ export function OrderHistoryManagement() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [hasUnsyncedFinalizedOrders, setHasUnsyncedFinalizedOrders] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -149,6 +150,7 @@ export function OrderHistoryManagement() {
   const loadOrders = useCallback(async () => {
     if (!selectedShiftId) {
       setOrders([]);
+      setHasUnsyncedFinalizedOrders(false);
       return;
     }
 
@@ -166,8 +168,21 @@ export function OrderHistoryManagement() {
 
     if (result.data) {
       setOrders(result.data);
+      const allShiftOrders = selectedStaffId
+        ? await orderApi.getOrdersByShift(selectedShiftId)
+        : result;
+
+      console.log('All shift orders:', allShiftOrders.data);
+      setHasUnsyncedFinalizedOrders(
+        !!allShiftOrders.data?.some(
+          (order: Order) =>
+            (order.status === 'completed' || order.status === 'voided') &&
+            !order.cloud_sync_at
+        )
+      );
     } else {
       setOrders([]);
+      setHasUnsyncedFinalizedOrders(false);
     }
     setCurrentPage(1);
     setLoading(false);
@@ -240,7 +255,6 @@ export function OrderHistoryManagement() {
     }
     setSyncing(false);
   };
-
 
   const getStaffName = (staffId: string): string => {
     const staff = staffList.find((s) => s.id === staffId);
@@ -507,7 +521,7 @@ export function OrderHistoryManagement() {
                     size="sm"
                     className="mt-2 gap-2"
                     onClick={handleSyncOrders}
-                    disabled={syncing}
+                    disabled={syncing || !hasUnsyncedFinalizedOrders}
                   >
                     {syncing ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
