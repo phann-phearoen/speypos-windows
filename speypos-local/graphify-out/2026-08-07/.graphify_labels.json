@@ -54,20 +54,5 @@
   "52": "business-day.repo.test.js",
   "53": "maintenance.test.js",
   "54": "outbox.repo.test.js",
-  "55": "outbox-dispatchers.test.js",
-  "56": "upload.controller.js",
-  "57": "display.controller.js",
-  "58": "cup-size.repo.js",
-  "59": "menu-category-cup-size-map.routes.js",
-  "60": "menu-item-category-map.controller.js",
-  "61": "menu-item-cup-size-map.routes.js",
-  "62": "menu-item.repo.js",
-  "63": "menu-category-cup-size-map.repo.js",
-  "64": "settings.repo.js",
-  "65": "menu-item-customization-group.repo.js",
-  "66": "menu-item-topping-group.repo.js",
-  "67": "customization-option-cup-size.test.js",
-  "68": "order-cup-size-canonicalization.test.js",
-  "69": "cup-size.service.test.js",
-  "70": "cloudHandshake.service.test.js"
+  "55": "outbox-dispatchers.test.js"
 }
