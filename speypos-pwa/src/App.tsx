@@ -22,6 +22,7 @@ import DisplayPage from "./pages/display/DisplayPage";
 // Admin Pages
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./layouts/AdminLayout";
+import { useAuth } from "@/contexts/AuthContext";
 import { StaffManagement } from "./components/admin/StaffManagement";
 import { MenuItemManagement } from "./components/admin/MenuItemManagement";
 import { CategoryManagement } from "./components/admin/CategoryManagement";
@@ -32,6 +33,12 @@ import { OrderHistoryManagement } from "./components/admin/OrderHistoryManagemen
 import { StoreManagement } from "./components/admin/StoreManagement";
 import { SettingsManagement } from "./components/admin/SettingsManagement";
 import NotFound from "./pages/NotFound";
+
+// Staff role cannot view the Staff (user data) page, so default them to Menu Items instead.
+function AdminIndexRedirect() {
+  const { isAdmin } = useAuth();
+  return <Navigate to={isAdmin ? "/admin/staff" : "/admin/menu-items"} replace />;
+}
 
 const queryClient = new QueryClient();
 
@@ -66,7 +73,7 @@ const App = () => (
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<Navigate to="/admin/staff" replace />} />
+                    <Route index element={<AdminIndexRedirect />} />
                     <Route path="staff" element={<StaffManagement />} />
                     <Route path="menu-items" element={<MenuItemManagement />} />
                     <Route path="categories" element={<CategoryManagement />} />

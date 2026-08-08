@@ -10,7 +10,8 @@ import { isAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// Write and delete operations are restricted to admin users, read operations are public
+// Reads are public: the Shift Page needs the staff list before any session/role exists.
+// Write and delete operations remain admin-only.
 router.get('/staff', getStaffMembers);
 router.get('/staff/:id', getStaffMember);
 router.post('/staff', isAdmin, createStaffMember);

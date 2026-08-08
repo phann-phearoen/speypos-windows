@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Loader2, ChevronRight, Layers } from 'lucide-react';
 import { useMenu } from '@/contexts/MenuContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -50,6 +51,7 @@ const UNIT_LABELS = ['qty', 'shot', 'ml', 'g', 'oz'];
 export function ToppingManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { refresh: refreshMenuContext } = useMenu();
   const { format, normalizeInput, toDisplayValue, symbol: CURRENCY_SYMBOL } = useCurrency();
   const [groups, setGroups] = useState<ToppingGroup[]>([]);
@@ -273,6 +275,7 @@ export function ToppingManagement() {
 
   return (
     <div className="space-y-6 pb-16">
+    <fieldset disabled={!isAdmin} className="contents">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('admin.toppings.title')}</h1>
@@ -568,6 +571,7 @@ export function ToppingManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </fieldset>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Loader2, FolderTree } from 'lucide-react';
 import { useMenu } from '@/contexts/MenuContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -46,6 +47,7 @@ const initialFormData: CategoryFormData = {
 export function CategoryManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { refresh: refreshMenuContext } = useMenu();
 
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -267,6 +269,7 @@ export function CategoryManagement() {
 
   return (
     <div className="space-y-6 pb-16">
+    <fieldset disabled={!isAdmin} className="contents">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('admin.categories.title')}</h1>
@@ -528,6 +531,7 @@ export function CategoryManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </fieldset>
     </div>
   );
 }

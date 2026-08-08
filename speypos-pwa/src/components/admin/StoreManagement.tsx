@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { storeApi, systemApi, healthApi } from '@/lib/api';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useSetup } from '@/contexts/SetupContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/i18n';
 import { ImageUpload } from './ImageUpload';
 import type { Store as StoreType, PaymentProfileV1 } from '@/types/pos';
@@ -28,6 +29,7 @@ const LANGUAGE_OPTIONS = [
 export function StoreManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { store: contextStore, refetchStore } = useSettings();
   const { setIsRebooting } = useSetup();
   
@@ -298,6 +300,7 @@ export function StoreManagement() {
 
   return (
     <div className="space-y-6 pb-16">
+    <fieldset disabled={!isAdmin} className="contents">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('admin.store.title')}</h1>
@@ -586,6 +589,7 @@ export function StoreManagement() {
         </Card>
 
       </div>
+    </fieldset>
     </div>
   );
 }

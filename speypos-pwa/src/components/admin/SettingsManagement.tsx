@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { settingsApi, systemApi, healthApi } from '@/lib/api';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useSetup } from '@/contexts/SetupContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/i18n';
 import type { Setting, ReceiptCopyConfig, TelegramIntent, ReceiptCopiesSettingV1, TelegramIntentsSettingV1, CloudSyncSettingV1 } from '@/types/pos';
 
@@ -36,6 +37,7 @@ const INTENT_DESCRIPTIONS: Record<string, string> = {
 export function SettingsManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { refetchSettings } = useSettings();
   const { setIsRebooting } = useSetup();
   const [loading, setLoading] = useState(true);
@@ -356,6 +358,7 @@ export function SettingsManagement() {
 
   return (
     <div className="space-y-6 pb-16">
+    <fieldset disabled={!isAdmin} className="contents">
       <div>
         <h1 className="text-2xl font-bold text-foreground">{t('admin.settings.title')}</h1>
         <p className="text-muted-foreground mt-1">{t('admin.settings.description')}</p>
@@ -603,6 +606,7 @@ export function SettingsManagement() {
           </CardContent>
         </Card>
       </div>
+    </fieldset>
     </div>
   );
 }

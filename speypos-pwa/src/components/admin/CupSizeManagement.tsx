@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { cupSizeApi } from '@/lib/api';
 import { sortCupSizes } from '@/lib/cupSizeSort';
 import { useMenu } from '@/contexts/MenuContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { CupSize } from '@/types/pos';
 
@@ -18,6 +19,7 @@ const initialFormData: CupSizeFormData = { size: '', unit: '' };
 
 export function CupSizeManagement() {
   const { refresh: refreshMenuContext } = useMenu();
+  const { isAdmin } = useAuth();
   const { toast } = useToast();
   const [cupSizes, setCupSizes] = useState<CupSize[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,6 +107,7 @@ export function CupSizeManagement() {
 
   return (
     <div className="space-y-6">
+    <fieldset disabled={!isAdmin} className="contents">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Cup Sizes</h1>
@@ -202,6 +205,7 @@ export function CupSizeManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </fieldset>
     </div>
   );
 }

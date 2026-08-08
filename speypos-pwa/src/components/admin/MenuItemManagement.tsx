@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Loader2, ImageIcon } from 'lucide-react';
 import { useMenu } from '@/contexts/MenuContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -38,6 +39,7 @@ const initialFormData: MenuItemFormData = {
 export function MenuItemManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const { refresh: refreshMenuContext } = useMenu();
   const { format, normalizeInput, toDisplayValue, symbol: CURRENCY_SYMBOL, getMinorUnit } = useCurrency();
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -433,6 +435,7 @@ export function MenuItemManagement() {
 
   return (
     <div className="space-y-6 pb-16">
+    <fieldset disabled={!isAdmin} className="contents">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('admin.menuItems.title')}</h1>
@@ -621,6 +624,7 @@ export function MenuItemManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </fieldset>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   
   const [name, setName] = useState('');
@@ -17,15 +17,15 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirect if already authenticated as admin - moved to useEffect to prevent render issues
+  // Redirect if already authenticated - moved to useEffect to prevent render issues
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
+    if (isAuthenticated) {
       navigate('/admin', { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Show loading state while redirecting
-  if (isAuthenticated && isAdmin) {
+  if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -53,11 +53,7 @@ export default function AdminLogin() {
       }
 
       if (response.data) {
-        if (response.data.role !== 'admin') {
-          setError('Access denied. Admin privileges required.');
-          return;
-        }
-
+        // Both admin and staff may access the dashboard; page-level access is read-only for staff.
         login(response.data);
         toast({
           title: 'Welcome back!',

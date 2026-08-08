@@ -13,7 +13,7 @@ export default function AdminLayout() {
   const { t } = useTranslation();
 
   const tabs = [
-    { id: 'staff', label: t('admin.tab.staff'), icon: <Users className="w-5 h-5" /> },
+    ...(isAdmin ? [{ id: 'staff', label: t('admin.tab.staff'), icon: <Users className="w-5 h-5" /> }] : []),
     { id: 'menu-items', label: t('admin.tab.menuItems'), icon: <Coffee className="w-5 h-5" /> },
     { id: 'categories', label: t('admin.tab.categories'), icon: <FolderTree className="w-5 h-5" /> },
     { id: 'customizations', label: t('admin.tab.customizations'), icon: <Settings2 className="w-5 h-5" /> },
@@ -24,14 +24,14 @@ export default function AdminLayout() {
     { id: 'settings', label: t('admin.tab.settings'), icon: <Cog className="w-5 h-5" /> },
   ];
 
-  // Protect route
+  // Protect route: any authenticated staff may enter, page-level access is enforced per tab.
   useEffect(() => {
-    if (!isAuthenticated || !isAdmin) {
+    if (!isAuthenticated) {
       navigate('/admin/login', { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, navigate]);
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated) {
     return null;
   }
 

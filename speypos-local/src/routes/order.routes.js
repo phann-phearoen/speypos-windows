@@ -7,6 +7,7 @@ import {
   printOrderReceipt,
   voidOrder,
 } from '../controllers/order.controller.js';
+import { isAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.post('/orders/:id/pay', createPayment);
 router.post('/orders/:id/print', printOrderReceipt);
 
 // PATCH /api/orders/:id/void - Void an order
-router.patch('/orders/:id/void', voidOrder);
+// Interim: admin-only until the one-time staff permission (TOTP) grant replaces this gate.
+router.patch('/orders/:id/void', isAdmin, voidOrder);
 
 export default router;

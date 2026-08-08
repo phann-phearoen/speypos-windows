@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Loader2, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { staffApi } from '@/lib/api';
 import type { Staff } from '@/types/pos';
 import { ImageUpload } from './ImageUpload';
@@ -29,6 +31,8 @@ const initialFormData: StaffFormData = {
 export function StaffManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +55,17 @@ export function StaffManagement() {
   useEffect(() => {
     fetchStaff();
   }, []);
+
+  // Staff records are user data: only admins may view this page.
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/admin', { replace: true });
+    }
+  }, [isAdmin, navigate]);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const openCreateForm = () => {
     setEditingStaff(null);
