@@ -20,6 +20,7 @@
     "test:payment-outbox": "node --test src/tests/order-payment-outbox.test.js",
     "test:cloud-handshake": "node --test src/tests/cloudHandshake.service.test.js",
     "test:cloud-ingest-contract": "node --test src/tests/cloud-ingest-contract.test.js",
+    "test:totp-authorization": "node --test src/tests/totp-authorization.test.js",
     "dev": "nodemon src/index.js",
     "db:dump": "node data/seed-scripts/dump.js",
     "db:seed": "node data/seed-scripts/seed.js",
@@ -41,6 +42,8 @@
     "multer": "^2.0.2",
     "node-printer": "^1.0.4",
     "node-thermal-printer": "^4.1.2",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"
   },

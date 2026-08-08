@@ -301,12 +301,12 @@ export function findUnreportedForTelegram() {
 /**
  * Marks an order as voided with metadata. Also clears print/telegram flags so downstream flows can run.
  * @param {string} id - The ID of the order to void.
- * @param {{ void_reason: string, void_note?: string, voided_by?: string }} voidData
+ * @param {{ void_reason: string, void_note?: string, voided_by?: string, authorized_by?: string }} voidData
  * @returns {object} The updated order row.
  */
 export function voidOrder(id, voidData) {
   const db = getDb();
-  const { void_reason, void_note, voided_by } = voidData;
+  const { void_reason, void_note, voided_by, authorized_by } = voidData;
   const voided_at = Date.now();
 
   const transaction = db.transaction(() => {
@@ -317,12 +317,13 @@ export function voidOrder(id, voidData) {
            void_note = ?,
            voided_at = ?,
            voided_by = ?,
+           authorized_by = ?,
            printed_at = NULL,
            telegram_reported_at = NULL
        WHERE id = ?`
     );
 
-    stmt.run(ORDER_STATUS.VOIDED, void_reason, void_note || null, voided_at, voided_by || null, id);
+    stmt.run(ORDER_STATUS.VOIDED, void_reason, void_note || null, voided_at, voided_by || null, authorized_by || null, id);
 
     return getOrderById(id);
   });

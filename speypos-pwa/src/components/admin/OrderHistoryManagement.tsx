@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   CalendarIcon,
   Eye,
+  Ban,
   Clock,
   User,
   ShoppingCart,
@@ -48,15 +49,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { shiftApi, orderApi, staffApi, syncApi } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { shiftApi, orderApi, staffApi, syncApi, authorizationApi } from "@/lib/api";
 import { useCurrency } from "@/lib/currency";
 import { useTranslation } from "@/lib/i18n";
 import { useDateTime } from "@/lib/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Shift, Staff, Order, OrderItem } from "@/types/pos";
 
@@ -66,6 +71,7 @@ export function OrderHistoryManagement() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { getCloudSyncEnabled } = useSettings();
+  const { isAdmin, staff: loggedInStaff } = useAuth();
   const {
     formatDate, 
     formatTime, 
@@ -93,6 +99,15 @@ export function OrderHistoryManagement() {
   const [closingShiftId, setClosingShiftId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [loadingOpenShifts, setLoadingOpenShifts] = useState(true);
+
+  // Void order state
+  const [voidingOrder, setVoidingOrder] = useState<Order | null>(null);
+  const [voidReason, setVoidReason] = useState<'mistake' | 'staff_consumption' | 'other' | ''>('');
+  const [voidNote, setVoidNote] = useState('');
+  const [voidAdminId, setVoidAdminId] = useState('');
+  const [voidCode, setVoidCode] = useState('');
+  const [isVoidSubmitting, setIsVoidSubmitting] = useState(false);
+  const [voidError, setVoidError] = useState('');
 
   const loadOpenShifts = useCallback(async () => {
     setLoadingOpenShifts(true);
@@ -191,6 +206,66 @@ export function OrderHistoryManagement() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  const openVoidDialog = (order: Order) => {
+    setVoidingOrder(order);
+    setVoidReason('');
+    setVoidNote('');
+    setVoidAdminId('');
+    setVoidCode('');
+    setVoidError('');
+  };
+
+  const closeVoidDialog = () => {
+    setVoidingOrder(null);
+  };
+
+  const handleVoidSubmit = async () => {
+    if (!voidingOrder?.id) return;
+    if (!voidReason) {
+      setVoidError(t('void.selectReason'));
+      return;
+    }
+    if (!isAdmin && (!voidAdminId || !/^\d{6}$/.test(voidCode))) {
+      setVoidError(t('admin.orderHistory.voidAuthRequired'));
+      return;
+    }
+
+    setIsVoidSubmitting(true);
+    setVoidError('');
+    try {
+      if (!isAdmin) {
+        const authRes = await authorizationApi.verify({
+          admin_staff_id: voidAdminId,
+          code: voidCode,
+          action: 'order.void',
+          resource_type: 'order',
+          resource_id: voidingOrder.id,
+          requested_by_staff_id: loggedInStaff?.id || '',
+          reason: voidNote || undefined,
+        });
+        if (authRes.error || !authRes.data?.granted) {
+          throw new Error(authRes.error || t('admin.orderHistory.voidAuthFailed'));
+        }
+      }
+
+      const voidRes = await orderApi.voidOrder(voidingOrder.id, {
+        void_reason: voidReason,
+        void_note: voidNote || undefined,
+        voided_by: loggedInStaff?.id || '',
+      });
+      if (voidRes.error) throw new Error(voidRes.error);
+
+      toast({ title: t('admin.orderHistory.voidSuccessTitle') });
+      closeVoidDialog();
+      setSelectedOrder(null);
+      await loadOrders();
+    } catch (error) {
+      setVoidError(error instanceof Error ? error.message : t('admin.orderHistory.voidAuthFailed'));
+    } finally {
+      setIsVoidSubmitting(false);
+    }
+  };
 
   // Close orphaned shift handler
   const handleCloseShift = async (shiftId: string) => {
@@ -652,13 +727,25 @@ export function OrderHistoryManagement() {
                   </TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {order.status === 'completed' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => openVoidDialog(order)}
+                        >
+                          <Ban className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -822,8 +909,99 @@ export function OrderHistoryManagement() {
                   )}
                 </div>
               )}
+
+              {selectedOrder.status === 'completed' && (
+                <div className="border-t pt-4">
+                  <Button
+                    variant="destructive"
+                    className="w-full gap-2"
+                    onClick={() => openVoidDialog(selectedOrder)}
+                  >
+                    <Ban className="w-4 h-4" />
+                    {t('admin.orderHistory.voidAction')}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Void Order Dialog */}
+      <Dialog open={!!voidingOrder} onOpenChange={(open) => !open && closeVoidDialog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t('admin.orderHistory.voidAction')} {voidingOrder ? `#${formatOrderIdentifier(voidingOrder)}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('void.voidReason')}</Label>
+              <Select value={voidReason} onValueChange={(value) => setVoidReason(value as typeof voidReason)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('void.selectReason')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mistake">{t('void.reasonMistake')}</SelectItem>
+                  <SelectItem value="staff_consumption">{t('void.reasonStaffConsumption')}</SelectItem>
+                  <SelectItem value="other">{t('void.reasonOther')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('void.voidNote')}</Label>
+              <Textarea
+                value={voidNote}
+                onChange={(e) => setVoidNote(e.target.value)}
+                placeholder={t('void.notePlaceholder')}
+              />
+            </div>
+
+            {!isAdmin && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t('admin.orderHistory.voidAuthorizingAdmin')}</Label>
+                  <Select value={voidAdminId} onValueChange={setVoidAdminId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('admin.orderHistory.voidSelectAdmin')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staffList
+                        .filter((s) => s.role === 'admin' && s.status === 'active')
+                        .map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>{admin.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('admin.orderHistory.voidCode')}</Label>
+                  <Input
+                    value={voidCode}
+                    onChange={(e) => setVoidCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    inputMode="numeric"
+                    maxLength={6}
+                  />
+                </div>
+              </>
+            )}
+
+            {voidError && <p className="text-sm text-destructive">{voidError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeVoidDialog} disabled={isVoidSubmitting}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleVoidSubmit} disabled={isVoidSubmitting}>
+              {isVoidSubmitting && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
+              {t('admin.orderHistory.voidAction')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

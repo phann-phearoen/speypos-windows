@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { staffApi } from '@/lib/api';
-import type { Staff } from '@/types/pos';
+import { staffApi, totpApi } from '@/lib/api';
+import type { Staff, TotpStatus, TotpEnrollment } from '@/types/pos';
 import { ImageUpload } from './ImageUpload';
 import { useTranslation } from '@/lib/i18n';
 
@@ -31,17 +31,22 @@ const initialFormData: StaffFormData = {
 export function StaffManagement() {
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, staff: loggedInStaff } = useAuth();
   const navigate = useNavigate();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
   const [formData, setFormData] = useState<StaffFormData>(initialFormData);
+
+  const [totpStatus, setTotpStatus] = useState<TotpStatus | null>(null);
+  const [isTotpDialogOpen, setIsTotpDialogOpen] = useState(false);
+  const [totpEnrollment, setTotpEnrollment] = useState<TotpEnrollment | null>(null);
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
   const fetchStaff = async () => {
     setIsLoading(true);
@@ -63,9 +68,46 @@ export function StaffManagement() {
     }
   }, [isAdmin, navigate]);
 
+  useEffect(() => {
+    if (loggedInStaff?.id) {
+      totpApi.getStatus(loggedInStaff.id).then((response) => {
+        if (response.data) setTotpStatus(response.data);
+      });
+    }
+  }, [loggedInStaff?.id]);
+
   if (!isAdmin) {
     return null;
   }
+
+  const openTotpEnrollment = async () => {
+    if (!loggedInStaff?.id) return;
+    setIsEnrolling(true);
+    try {
+      const response = await totpApi.enroll(loggedInStaff.id);
+      if (response.error || !response.data) throw new Error(response.error || 'Enrollment failed');
+      setTotpEnrollment(response.data);
+      setIsTotpDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: t('toast.error'),
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
+  const closeTotpDialog = () => {
+    setIsTotpDialogOpen(false);
+    setTotpEnrollment(null);
+    if (loggedInStaff?.id) {
+      totpApi.getStatus(loggedInStaff.id).then((response) => {
+        if (response.data) setTotpStatus(response.data);
+      });
+    }
+  };
 
   const openCreateForm = () => {
     setEditingStaff(null);
@@ -179,6 +221,7 @@ export function StaffManagement() {
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">{t('admin.staff.name')}</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">{t('admin.staff.role')}</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">{t('admin.staff.status')}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">{t('admin.staff.authenticator')}</th>
                 <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">{t('admin.menuItems.actions')}</th>
               </tr>
             </thead>
@@ -207,6 +250,21 @@ export function StaffManagement() {
                       {staff.status === 'active' ? t('admin.staff.statusActive') : t('admin.staff.statusInactive')}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {staff.role === 'admin' && staff.id === loggedInStaff?.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${totpStatus?.enrolled ? 'text-success' : 'text-muted-foreground'}`}>
+                          {totpStatus?.enrolled ? t('admin.staff.totpEnrolled') : t('admin.staff.totpNotEnrolled')}
+                        </span>
+                        <Button variant="outline" size="sm" onClick={openTotpEnrollment} disabled={isEnrolling}>
+                          {isEnrolling && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
+                          {totpStatus?.enrolled ? t('admin.staff.totpRegenerate') : t('admin.staff.totpSetUp')}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openEditForm(staff)}>
@@ -221,7 +279,7 @@ export function StaffManagement() {
               ))}
               {staffList.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     {t('admin.staff.noStaff')}
                   </td>
                 </tr>
@@ -310,6 +368,31 @@ export function StaffManagement() {
             <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('common.delete')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* TOTP Enrollment Dialog */}
+      <Dialog open={isTotpDialogOpen} onOpenChange={(open) => (open ? setIsTotpDialogOpen(true) : closeTotpDialog())}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('admin.staff.totpDialogTitle')}</DialogTitle>
+          </DialogHeader>
+          {totpEnrollment && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{t('admin.staff.totpDialogDescription')}</p>
+              <div className="flex justify-center">
+                <img src={totpEnrollment.qr_data_url} alt="Authenticator QR code" className="w-48 h-48" />
+              </div>
+              <div className="text-sm">
+                <p className="text-muted-foreground mb-1">{t('admin.staff.totpManualEntry')}</p>
+                <code className="block bg-muted px-2 py-1 rounded text-xs break-all">{totpEnrollment.secret}</code>
+              </div>
+              <p className="text-xs text-destructive">{t('admin.staff.totpRegenerateWarning')}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={closeTotpDialog}>{t('common.done')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

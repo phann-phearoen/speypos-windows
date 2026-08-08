@@ -1,5 +1,5 @@
 // API Client for SpeyPOS Local Backend
-import type { DayClosePreviewResponse, DayCloseResponse, DayCloseStatusResponse, Order, PreviousDayStatus, ShiftSalesReport } from '@/types/pos';
+import type { AuthorizationGrantRequest, AuthorizationGrantResponse, DayClosePreviewResponse, DayCloseResponse, DayCloseStatusResponse, Order, PreviousDayStatus, ShiftSalesReport, TotpEnrollment, TotpStatus } from '@/types/pos';
 
 const API_BASE = 'http://localhost:8080/api';
 const BACKEND_URL = 'http://localhost:8080';
@@ -241,6 +241,24 @@ export const staffApi = {
     adminRequest<any>(`/staff/${id}`, { method: 'DELETE' }),
 };
 
+// TOTP enrollment for admins, and the staff one-time-authorization pathway it powers
+export const totpApi = {
+  enroll: (staffId: string) =>
+    adminRequest<TotpEnrollment>('/totp/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ staff_id: staffId }),
+    }),
+  getStatus: (staffId: string) => adminRequest<TotpStatus>(`/totp/status/${staffId}`),
+};
+
+export const authorizationApi = {
+  verify: (payload: AuthorizationGrantRequest) =>
+    request<AuthorizationGrantResponse>('/totp/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+};
+
 // Shifts
 export const shiftApi = {
   getShifts: () => request<any[]>('/shift'),
@@ -301,7 +319,7 @@ export const orderApi = {
       body: JSON.stringify(options?.reprint ? { reprint: true } : {}),
     }),
   voidOrder: (orderId: string, data: { void_reason: string; void_note?: string; voided_by: string }) =>
-    request<Order>(`/orders/${orderId}/void`, {
+    adminRequest<Order>(`/orders/${orderId}/void`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),

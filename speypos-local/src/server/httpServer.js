@@ -31,6 +31,7 @@ import cupSizeRouter from '../routes/cup-size.routes.js';
 import menuItemCupSizeMapRouter from '../routes/menu-item-cup-size-map.routes.js';
 import menuCategoryCupSizeMapRouter from '../routes/menu-category-cup-size-map.routes.js';
 import syncRouter from '../routes/sync.routes.js';
+import totpRouter from '../routes/totp.routes.js';
 
 const app = express();
 
@@ -93,6 +94,7 @@ export function startServer({ mode = 'NORMAL' }) {
       app.use('/api', cupSizeRouter);
       app.use('/api', menuItemCupSizeMapRouter);
       app.use('/api', menuCategoryCupSizeMapRouter);
+      app.use('/api', totpRouter);
     }
 
     // 3. SPA Catch-all for frontend routing

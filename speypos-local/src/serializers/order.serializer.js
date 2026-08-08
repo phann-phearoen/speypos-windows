@@ -21,6 +21,10 @@ export function serializeOrder(order) {
     ? db.prepare('SELECT id, name FROM Staff WHERE id = ?').get(order.voided_by)
     : null;
 
+  const authorizedByStaff = order.authorized_by
+    ? db.prepare('SELECT id, name FROM Staff WHERE id = ?').get(order.authorized_by)
+    : null;
+
   const items = db
     .prepare(
       `
@@ -81,6 +85,8 @@ export function serializeOrder(order) {
     staff: staff || (order.staff_id ? { id: order.staff_id, name: null } : null),
     voided_by_staff:
       voidedByStaff || (order.voided_by ? { id: order.voided_by, name: null } : null),
+    authorized_by_staff:
+      authorizedByStaff || (order.authorized_by ? { id: order.authorized_by, name: null } : null),
     items: serializedItems,
     payments,
   };

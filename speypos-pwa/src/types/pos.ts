@@ -144,6 +144,34 @@ export interface Order {
   void_note?: string;
   voided_at?: number;
   voided_by?: string;
+  authorized_by?: string;
+  authorized_by_staff?: { id: string; name: string | null } | null;
+}
+
+export interface TotpStatus {
+  enrolled: boolean;
+  enrolled_at: number | null;
+}
+
+export interface TotpEnrollment {
+  otpauth_url: string;
+  qr_data_url: string;
+  secret: string;
+}
+
+export interface AuthorizationGrantRequest {
+  admin_staff_id: string;
+  code: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  requested_by_staff_id: string;
+  reason?: string;
+}
+
+export interface AuthorizationGrantResponse {
+  granted: boolean;
+  expires_at: number;
 }
 
 export interface Staff {

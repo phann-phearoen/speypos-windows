@@ -8,6 +8,8 @@ import { logger } from '../utils/logger.js';
 import { serializeOrder } from '../serializers/order.serializer.js';
 import { ORDER_STATUS, ORDER_VOID_REASONS } from '../constants/order.constants.js';
 import { queueOrderSideEffects, queueVoidSideEffects } from '../services/outbox.service.js';
+import * as grantRepo from '../storage/repositories/authorization-grant.repo.js';
+import { AUTHORIZATION_ACTIONS, GRANT_TTL_MS } from '../constants/authorization.constants.js';
 
 export function normalizeOrderPayload(rawPayload) {
   const inputItems = Array.isArray(rawPayload?.items) ? rawPayload.items : [];
@@ -306,8 +308,24 @@ export async function voidOrder(req, res) {
       return res.status(409).json({ error: 'Order is already voided.' });
     }
 
+    // Admins may void directly; staff must spend a one-time grant issued for this exact order.
+    let authorized_by = null;
+    if (req.headers['x-user-role'] !== 'admin') {
+      const grant = grantRepo.findUnconsumedGrant({
+        action: AUTHORIZATION_ACTIONS.ORDER_VOID,
+        resourceType: 'order',
+        resourceId: id,
+        ttlMs: GRANT_TTL_MS,
+      });
+      if (!grant) {
+        return res.status(403).json({ error: 'A valid admin authorization is required to void this order.' });
+      }
+      grantRepo.consumeGrant(grant.id);
+      authorized_by = grant.admin_staff_id;
+    }
+
     const updatedOrder = serializeOrder(
-      orderRepo.voidOrder(id, { void_reason, void_note, voided_by })
+      orderRepo.voidOrder(id, { void_reason, void_note, voided_by, authorized_by })
     );
     queueVoidSideEffects(updatedOrder).catch((err) => {
       logger.error(`Failed to enqueue outbox events for voided order ${updatedOrder.id}`, {
