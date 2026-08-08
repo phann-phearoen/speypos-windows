@@ -27,6 +27,7 @@ import { MenuItemManagement } from "./components/admin/MenuItemManagement";
 import { CategoryManagement } from "./components/admin/CategoryManagement";
 import { CustomizationManagement } from "./components/admin/CustomizationManagement";
 import { ToppingManagement } from "./components/admin/ToppingManagement";
+import { CupSizeManagement } from "./components/admin/CupSizeManagement";
 import { OrderHistoryManagement } from "./components/admin/OrderHistoryManagement";
 import { StoreManagement } from "./components/admin/StoreManagement";
 import { SettingsManagement } from "./components/admin/SettingsManagement";
@@ -71,6 +72,7 @@ const App = () => (
                     <Route path="categories" element={<CategoryManagement />} />
                     <Route path="customizations" element={<CustomizationManagement />} />
                     <Route path="toppings" element={<ToppingManagement />} />
+                    <Route path="cup-sizes" element={<CupSizeManagement />} />
                     <Route path="order-history" element={<OrderHistoryManagement />} />
                     <Route path="store" element={<StoreManagement />} />
                     <Route path="settings" element={<SettingsManagement />} />

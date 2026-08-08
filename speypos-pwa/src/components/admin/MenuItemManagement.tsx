@@ -59,9 +59,6 @@ export function MenuItemManagement() {
   const [formData, setFormData] = useState<MenuItemFormData>(initialFormData);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [newCupSizeSize, setNewCupSizeSize] = useState('');
-  const [newCupSizeUnit, setNewCupSizeUnit] = useState('');
-  const [isCreatingCupSize, setIsCreatingCupSize] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -211,34 +208,6 @@ export function MenuItemManagement() {
       ...prev,
       cup_size_id: cupSizeId,
     }));
-  };
-
-  const handleCreateCupSize = async () => {
-    if (!newCupSizeSize.trim() || !newCupSizeUnit.trim()) {
-      toast({ title: t('toast.error'), description: 'Size and unit are required', variant: 'destructive' });
-      return;
-    }
-
-    setIsCreatingCupSize(true);
-    try {
-      const result = await cupSizeApi.create({
-        size: newCupSizeSize.trim(),
-        unit: newCupSizeUnit.trim(),
-      });
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setNewCupSizeSize('');
-      setNewCupSizeUnit('');
-      await fetchData();
-      toast({ title: t('toast.success'), description: 'Cup size created' });
-    } catch (error) {
-      toast({ title: t('toast.error'), description: 'Failed to create cup size', variant: 'destructive' });
-    } finally {
-      setIsCreatingCupSize(false);
-    }
   };
 
   const handleSubmit = async () => {
@@ -598,29 +567,7 @@ export function MenuItemManagement() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Cup Sizes</label>
-              <div className="grid grid-cols-5 gap-2">
-                <Input
-                  value={newCupSizeSize}
-                  onChange={(e) => setNewCupSizeSize(e.target.value)}
-                  placeholder="Size"
-                  className="col-span-2"
-                />
-                <Input
-                  value={newCupSizeUnit}
-                  onChange={(e) => setNewCupSizeUnit(e.target.value)}
-                  placeholder="Unit"
-                  className="col-span-2"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCreateCupSize}
-                  disabled={isCreatingCupSize}
-                >
-                  {isCreatingCupSize ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
-                </Button>
-              </div>
+              <label className="text-sm font-medium">Cup Size</label>
               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg">
                 <label className="flex items-center gap-2 cursor-pointer col-span-2">
                   <input

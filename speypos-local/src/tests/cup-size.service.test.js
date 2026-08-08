@@ -57,6 +57,18 @@ test('creates and lists cup sizes', () => {
   assert.equal(all[0].id, created.id);
 });
 
+test('updates and deletes a cup size', () => {
+  const created = cupSizeService.createCupSize({ size: '18', unit: 'oz' });
+
+  const updated = cupSizeService.updateCupSize(created.id, { size: '20', unit: 'oz' });
+  assert.equal(updated.size, '20');
+  assert.equal(updated.unit, 'oz');
+
+  const deleted = cupSizeService.deleteCupSize(created.id);
+  assert.equal(deleted.changes, 1);
+  assert.equal(cupSizeService.getCupSizeById(created.id), undefined);
+});
+
 test('category cup size applies when item has no item-level mapping', () => {
   const category = createMenuCategory({
     id: 'cat-1',

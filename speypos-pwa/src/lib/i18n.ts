@@ -143,6 +143,7 @@ const translations: Record<string, TranslationDictionary> = {
     'admin.tab.categories': 'Categories',
     'admin.tab.customizations': 'Customizations',
     'admin.tab.toppings': 'Toppings',
+    'admin.tab.cupSizes': 'Cup Sizes',
     'admin.tab.orderHistory': 'Order History',
     'admin.tab.settings': 'Settings',
     
@@ -619,6 +620,7 @@ const translations: Record<string, TranslationDictionary> = {
     'admin.tab.categories': 'ប្រភេទទំនិញ',
     'admin.tab.customizations': 'ការកែរប្រែទំនិញ',
     'admin.tab.toppings': 'គ្រឿងបន្ថែម',
+    'admin.tab.cupSizes': 'ទំហំកែវ',
     'admin.tab.orderHistory': 'ប្រវត្តិការកម្មង់',
     'admin.tab.settings': 'ការកំណត់',
     

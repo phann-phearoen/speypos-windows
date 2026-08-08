@@ -60,9 +60,6 @@ export function CategoryManagement() {
   const [selectedCustomizationGroupIds, setSelectedCustomizationGroupIds] = useState<string[]>([]);
   const [selectedToppingGroupIds, setSelectedToppingGroupIds] = useState<string[]>([]);
   const [selectedCupSizeId, setSelectedCupSizeId] = useState<string | null>(null);
-  const [newCupSizeSize, setNewCupSizeSize] = useState('');
-  const [newCupSizeUnit, setNewCupSizeUnit] = useState('');
-  const [isCreatingCupSize, setIsCreatingCupSize] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -268,31 +265,6 @@ export function CategoryManagement() {
     }
   };
 
-  const handleCreateCupSize = async () => {
-    if (!newCupSizeSize.trim() || !newCupSizeUnit.trim()) {
-      toast({ title: t('toast.error'), description: 'Size and unit are required', variant: 'destructive' });
-      return;
-    }
-
-    setIsCreatingCupSize(true);
-    try {
-      const result = await cupSizeApi.create({
-        size: newCupSizeSize.trim(),
-        unit: newCupSizeUnit.trim(),
-      });
-      if (result.error) throw new Error(result.error);
-
-      setNewCupSizeSize('');
-      setNewCupSizeUnit('');
-      await fetchData();
-      toast({ title: t('toast.success'), description: 'Cup size created' });
-    } catch (error) {
-      toast({ title: t('toast.error'), description: 'Failed to create cup size', variant: 'destructive' });
-    } finally {
-      setIsCreatingCupSize(false);
-    }
-  };
-
   return (
     <div className="space-y-6 pb-16">
       <div className="flex items-center justify-between">
@@ -481,33 +453,10 @@ export function CategoryManagement() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Cup Size Defaults</label>
+                <label className="text-sm font-medium">Cup Size Default</label>
                 <span className="text-xs text-muted-foreground">{selectedCupSizeId ? 1 : 0}</span>
               </div>
-              <p className="text-xs text-muted-foreground">These cup sizes are used when item-level cup sizes are not set.</p>
-
-              <div className="grid grid-cols-5 gap-2">
-                <Input
-                  value={newCupSizeSize}
-                  onChange={(e) => setNewCupSizeSize(e.target.value)}
-                  placeholder="Size"
-                  className="col-span-2"
-                />
-                <Input
-                  value={newCupSizeUnit}
-                  onChange={(e) => setNewCupSizeUnit(e.target.value)}
-                  placeholder="Unit"
-                  className="col-span-2"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCreateCupSize}
-                  disabled={isCreatingCupSize}
-                >
-                  {isCreatingCupSize ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
-                </Button>
-              </div>
+              <p className="text-xs text-muted-foreground">Used when an item does not have its own cup size.</p>
 
               {cupSizes.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No cup sizes available yet.</div>

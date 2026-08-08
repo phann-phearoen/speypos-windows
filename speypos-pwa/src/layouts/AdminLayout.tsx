@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { LogOut, Users, Coffee, FolderTree, ArrowLeft, Settings2, ClipboardList, Cog, Store, Layers } from 'lucide-react';
+import { LogOut, Users, Coffee, FolderTree, ArrowLeft, Settings2, ClipboardList, Cog, Store, Layers, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ export default function AdminLayout() {
     { id: 'categories', label: t('admin.tab.categories'), icon: <FolderTree className="w-5 h-5" /> },
     { id: 'customizations', label: t('admin.tab.customizations'), icon: <Settings2 className="w-5 h-5" /> },
     { id: 'toppings', label: t('admin.tab.toppings'), icon: <Layers className="w-5 h-5" /> },
+    { id: 'cup-sizes', label: t('admin.tab.cupSizes'), icon: <Ruler className="w-5 h-5" /> },
     { id: 'order-history', label: t('admin.tab.orderHistory'), icon: <ClipboardList className="w-5 h-5" /> },
     { id: 'store', label: t('admin.tab.store'), icon: <Store className="w-5 h-5" /> },
     { id: 'settings', label: t('admin.tab.settings'), icon: <Cog className="w-5 h-5" /> },
